@@ -1,0 +1,11 @@
+[
+    {
+      "id": 1,
+      "orderId": 1,
+      "amount": 75.00,
+      "paymentDate": "2025-06-20",
+      "paymentMethod": "bank_transfer",
+      "notes": "Initial payment - 50% advance",
+      "createdAt": "2025-06-20T10:30:00"
+    }
+  ]
