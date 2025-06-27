@@ -3660,74 +3660,81 @@
             // Create a new workbook
             const wb = XLSX.utils.book_new();
             
-            // Prepare invoice data for Excel with new layout
+            // Prepare invoice data for Excel with professional layout
             const invoiceData = [];
             
-            // Main assignment table
-            invoiceData.push(['Assignment Name', 'QTY', 'Unit Price', 'Total', '', 'EXCELLENT WRITERS', '', '']);
+            // Header row with company name and title
+            invoiceData.push(['', '', '', '', '', 'EXCELLENT WRITERS', '', '']);
+            invoiceData.push(['', '', '', '', '', '', '', '']);
+            
+            // Main assignment table header
+            invoiceData.push(['Assignment Name', 'QTY', 'UNIT PRICE', 'TOTAL', '', 'THANK YOU FOR YOUR BUSINESS!', '', '']);
             
             // Assignment rows
+            let currentRow = 3; // Starting after header rows
             invoice.orders.forEach((order, index) => {
                 const assignmentName = `${index + 1}. ${order.topic || order.subject}`;
-                const qty = 1; // Default quantity
+                const qty = 1;
                 const unitPrice = order.price;
                 const total = order.price;
                 
-                if (index === 0) {
-                    // First row includes the thank you note
-                    invoiceData.push([
-                        assignmentName,
-                        qty,
-                        `$${unitPrice.toFixed(2)}`,
-                        `$${total.toFixed(2)}`,
-                        '',
-                        'THANK YOU FOR YOUR BUSINESS!',
-                        '',
-                        ''
-                    ]);
-                } else {
-                    invoiceData.push([
-                        assignmentName,
-                        qty,
-                        `$${unitPrice.toFixed(2)}`,
-                        `$${total.toFixed(2)}`,
-                        '',
-                        '',
-                        '',
-                        ''
-                    ]);
-                }
-            });
-            
-            // Example assignment (Charan Exam) as requested
-            if (invoice.orders.length === 0) {
                 invoiceData.push([
-                    '1. Charan Exam',
-                    1,
-                    '$50.00',
-                    '$50.00',
+                    assignmentName,
+                    qty,
+                    `$${unitPrice.toFixed(2)}`,
+                    `$${total.toFixed(2)}`,
                     '',
-                    'THANK YOU FOR YOUR BUSINESS!',
+                    index === 0 ? '' : '', // Only first row has thank you message above
                     '',
                     ''
                 ]);
+                currentRow++;
+            });
+            
+            // Add example assignments if no orders exist
+            if (invoice.orders.length === 0) {
+                const exampleAssignments = [
+                    '1. Catran Exam',
+                    '2. Prison Exam', 
+                    '3. Nklia exam',
+                    '4. Urer exam',
+                    '5. Shathi exam',
+                    '6. Nbreath exam',
+                    '7. Avinash exam'
+                ];
+                
+                exampleAssignments.forEach((assignment, index) => {
+                    invoiceData.push([
+                        assignment,
+                        1,
+                        '$50.00',
+                        '$50.00',
+                        '',
+                        '',
+                        '',
+                        ''
+                    ]);
+                    currentRow++;
+                });
             }
             
-            // Add some spacing
+            // Add spacing rows
             invoiceData.push(['', '', '', '', '', '', '', '']);
-            
-            // Payment instructions on the right side
-            invoiceData.push(['', '', '', '', '', 'On Remitly select send to Kenya', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Select mode of receiving mobile money transfer', '', '']);
+            invoiceData.push(['', '', '', '', '', 'On Remitly select send to Kenya Select mode of receiving', '', '']);
+            invoiceData.push(['', '', '', '', '', 'as mobile money transfer', '', '']);
             invoiceData.push(['', '', '', '', '', 'Then select Safaricom', '', '']);
             invoiceData.push(['', '', '', '', '', '', '', '']);
             invoiceData.push(['', '', '', '', '', 'Name: Roy', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Last Name: Kimani', '', '']);
+            invoiceData.push(['', '', '', '', '', 'last Name: Kimani', '', '']);
             invoiceData.push(['', '', '', '', '', 'Number: +254748121039', '', '']);
             invoiceData.push(['', '', '', '', '', 'Country: Kenya', '', '']);
             invoiceData.push(['', '', '', '', '', 'City: Nairobi', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Mobile acc no: 254748121029', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Email: excelenow549@ms.com', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Mobile acc no: +254748121039', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Email: excellentwriters549@gmail.com', '', '']);
+            
+            // Add more spacing before totals
+            invoiceData.push(['', '', '', '', '', '', '', '']);
+            invoiceData.push(['', '', '', '', '', '', '', '']);
             
             // Financial summary at bottom left
             invoiceData.push(['', '', '', '', '', '', '', '']);
@@ -3738,42 +3745,107 @@
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(invoiceData);
             
-            // Set column widths for new layout
+            // Set column widths for professional layout
             ws['!cols'] = [
-                { width: 30 }, // Assignment Name
+                { width: 25 }, // Assignment Name
                 { width: 8 },  // QTY
-                { width: 15 }, // Unit Price
-                { width: 15 }, // Total
-                { width: 5 },  // Spacer
-                { width: 35 }, // Thank you / Payment details
-                { width: 20 }, // Extra space
-                { width: 20 }  // Extra space
+                { width: 12 }, // Unit Price
+                { width: 12 }, // Total
+                { width: 3 },  // Spacer
+                { width: 40 }, // Thank you / Payment details
+                { width: 15 }, // Extra space
+                { width: 15 }  // Extra space
             ];
             
-            // Style the header row
-            const headerStyle = {
-                font: { bold: true, sz: 12 },
-                alignment: { horizontal: 'center' },
-                fill: { fgColor: { rgb: '4472C4' } }
+            // Professional styling
+            const companyHeaderStyle = {
+                font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                fill: { fgColor: { rgb: '4472C4' } },
+                border: {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                }
+            };
+            
+            const tableHeaderStyle = {
+                font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                fill: { fgColor: { rgb: '5B9BD5' } },
+                border: {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                }
             };
             
             const thankYouStyle = {
-                font: { bold: true, sz: 14 },
-                alignment: { horizontal: 'center' },
-                fill: { fgColor: { rgb: 'FFD700' } }
+                font: { bold: true, sz: 12, color: { rgb: '000000' } },
+                alignment: { horizontal: 'left', vertical: 'center' },
+                fill: { fgColor: { rgb: 'F2F2F2' } }
+            };
+            
+            const dataRowStyle = {
+                font: { sz: 10 },
+                alignment: { horizontal: 'left', vertical: 'center' },
+                border: {
+                    top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+                    left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+                    bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+                    right: { style: 'thin', color: { rgb: 'CCCCCC' } }
+                }
             };
             
             const totalStyle = {
-                font: { bold: true, sz: 12 },
-                fill: { fgColor: { rgb: 'E6F3FF' } }
+                font: { bold: true, sz: 11 },
+                alignment: { horizontal: 'left', vertical: 'center' },
+                fill: { fgColor: { rgb: 'E7E6E6' } },
+                border: {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                }
             };
             
-            // Apply styles to header row
-            if (ws['A1']) ws['A1'].s = headerStyle;
-            if (ws['B1']) ws['B1'].s = headerStyle;
-            if (ws['C1']) ws['C1'].s = headerStyle;
-            if (ws['D1']) ws['D1'].s = headerStyle;
-            if (ws['F1']) ws['F1'].s = headerStyle;
+            const paymentDetailsStyle = {
+                font: { sz: 10 },
+                alignment: { horizontal: 'left', vertical: 'center' }
+            };
+            
+            // Apply styles to company header
+            if (ws['F1']) ws['F1'].s = companyHeaderStyle;
+            
+            // Apply styles to table headers (row 3)
+            ['A3', 'B3', 'C3', 'D3'].forEach(cell => {
+                if (ws[cell]) ws[cell].s = tableHeaderStyle;
+            });
+            
+            // Apply thank you style
+            if (ws['F3']) ws['F3'].s = thankYouStyle;
+            
+            // Apply borders and styling to data rows (starting from row 4)
+            for (let row = 4; row <= invoiceData.length; row++) {
+                ['A', 'B', 'C', 'D'].forEach(col => {
+                    const cellRef = col + row;
+                    if (ws[cellRef] && ws[cellRef].v !== '') {
+                        if (ws[cellRef].v.toString().includes('TOTAL') || ws[cellRef].v.toString().includes('SUB TOTAL') || ws[cellRef].v.toString().includes('Advance')) {
+                            ws[cellRef].s = totalStyle;
+                        } else {
+                            ws[cellRef].s = dataRowStyle;
+                        }
+                    }
+                });
+                
+                // Style payment details
+                const paymentCell = 'F' + row;
+                if (ws[paymentCell] && ws[paymentCell].v !== '') {
+                    ws[paymentCell].s = paymentDetailsStyle;
+                }
+            }
             
             // Add worksheet to workbook
             XLSX.utils.book_append_sheet(wb, ws, 'Invoice');
