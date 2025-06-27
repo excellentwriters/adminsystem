@@ -11,6 +11,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         :root {
@@ -3131,6 +3133,9 @@
                                 <button class="btn btn-outline-info" onclick="printClientInvoice(${invoice.id})" title="Print">
                                     <i class="bi bi-printer"></i>
                                 </button>
+                                <button class="btn btn-outline-warning" onclick="generateInvoiceExcel(appData.clientInvoices.find(inv => inv.id === ${invoice.id}), appData.clients.find(c => c.id === appData.clientInvoices.find(inv => inv.id === ${invoice.id}).clientId))" title="Download Excel">
+                                    <i class="bi bi-file-earmark-excel"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -3600,14 +3605,17 @@
                 return;
             }
 
-            // Format the invoice message
-            const invoiceMessage = formatInvoiceMessage(invoice, client);
+            // Generate Excel file
+            generateInvoiceExcel(invoice, client);
+
+            // Create message for WhatsApp with file reference
+            const whatsappMessage = `🧾 *INVOICE READY*\n\nHello ${client.name},\n\nYour invoice ${invoice.invoiceNumber} has been generated.\n\n💰 *Total Amount:* $${invoice.totalAmount.toFixed(2)}\n💳 *Amount Paid:* $${invoice.amountPaid.toFixed(2)}\n⚠️ *Outstanding Balance:* $${invoice.balance.toFixed(2)}\n\n📋 Please find the detailed invoice in Excel format that was just downloaded. Kindly send this file to complete the invoice delivery.\n\n🙏 Thank you for your business!`;
             
             // Clean WhatsApp number (remove any formatting)
             const whatsappNumber = client.whatsapp.replace(/[^0-9]/g, '');
             
-            // Create WhatsApp URL
-            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(invoiceMessage)}`;
+            // Create WhatsApp URL with the message
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
             
             // Open WhatsApp
             window.open(whatsappUrl, '_blank');
@@ -3646,6 +3654,108 @@
             message += `💬 Please reply to confirm receipt of this invoice.`;
             
             return message;
+        }
+
+        function generateInvoiceExcel(invoice, client) {
+            // Create a new workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Prepare invoice data for Excel
+            const invoiceData = [];
+            
+            // Header section
+            invoiceData.push(['INVOICE', '', '', '', '', '']);
+            invoiceData.push(['', '', '', '', '', '']);
+            invoiceData.push(['Invoice Number:', invoice.invoiceNumber, '', '', '', '']);
+            invoiceData.push(['Client Name:', client.name, '', '', '', '']);
+            invoiceData.push(['Client WhatsApp:', client.whatsapp, '', '', '', '']);
+            invoiceData.push(['Client Email:', client.email, '', '', '', '']);
+            invoiceData.push(['Invoice Date:', new Date(invoice.createdAt).toLocaleDateString(), '', '', '', '']);
+            invoiceData.push(['Due Date:', new Date(invoice.dueDate).toLocaleDateString(), '', '', '', '']);
+            invoiceData.push(['', '', '', '', '', '']);
+            
+            // Order details header
+            invoiceData.push(['ORDER DETAILS', '', '', '', '', '']);
+            invoiceData.push(['Order ID', 'Subject', 'Topic', 'Word Count', 'Price', 'Status']);
+            
+            // Order details
+            invoice.orders.forEach(order => {
+                invoiceData.push([
+                    order.orderId,
+                    order.subject,
+                    order.topic,
+                    order.wordCount,
+                    `$${order.price.toFixed(2)}`,
+                    order.paymentStatus
+                ]);
+            });
+            
+            invoiceData.push(['', '', '', '', '', '']);
+            
+            // Payment summary
+            invoiceData.push(['PAYMENT SUMMARY', '', '', '', '', '']);
+            invoiceData.push(['Total Amount:', `$${invoice.totalAmount.toFixed(2)}`, '', '', '', '']);
+            invoiceData.push(['Amount Paid:', `$${invoice.amountPaid.toFixed(2)}`, '', '', '', '']);
+            invoiceData.push(['Outstanding Balance:', `$${invoice.balance.toFixed(2)}`, '', '', '', '']);
+            
+            invoiceData.push(['', '', '', '', '', '']);
+            
+            // Payment details section
+            invoiceData.push(['PAYMENT DETAILS', '', '', '', '', '']);
+            invoiceData.push(['Bank Name:', 'ABC Bank', '', '', '', '']);
+            invoiceData.push(['Account Name:', 'Assignment Services Ltd', '', '', '', '']);
+            invoiceData.push(['Account Number:', '1234567890', '', '', '', '']);
+            invoiceData.push(['Swift Code:', 'ABCBKE22', '', '', '', '']);
+            invoiceData.push(['Branch:', 'Main Branch', '', '', '', '']);
+            invoiceData.push(['', '', '', '', '', '']);
+            invoiceData.push(['Alternative Payment Methods:', '', '', '', '', '']);
+            invoiceData.push(['PayPal:', 'payments@assignmentservices.com', '', '', '', '']);
+            invoiceData.push(['M-Pesa (Kenya):', '+254700000000', '', '', '', '']);
+            invoiceData.push(['', '', '', '', '', '']);
+            
+            if (invoice.notes) {
+                invoiceData.push(['Notes:', invoice.notes, '', '', '', '']);
+            }
+            
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(invoiceData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                { width: 20 },
+                { width: 25 },
+                { width: 30 },
+                { width: 15 },
+                { width: 15 },
+                { width: 15 }
+            ];
+            
+            // Style the header cells
+            const headerStyle = {
+                font: { bold: true, sz: 16 },
+                alignment: { horizontal: 'center' },
+                fill: { fgColor: { rgb: '4472C4' } }
+            };
+            
+            const sectionHeaderStyle = {
+                font: { bold: true, sz: 12 },
+                fill: { fgColor: { rgb: 'D9E2F3' } }
+            };
+            
+            // Apply styles to specific cells
+            if (ws['A1']) ws['A1'].s = headerStyle;
+            if (ws['A10']) ws['A10'].s = sectionHeaderStyle;
+            if (ws['A20']) ws['A20'].s = sectionHeaderStyle;
+            if (ws['A26']) ws['A26'].s = sectionHeaderStyle;
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Invoice');
+            
+            // Generate filename
+            const filename = `Invoice_${invoice.invoiceNumber}_${client.name.replace(/\s+/g, '_')}.xlsx`;
+            
+            // Download the file
+            XLSX.writeFile(wb, filename);
         }
 
         // === ORDER ID GENERATION FUNCTIONS ===
