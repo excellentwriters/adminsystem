@@ -3125,6 +3125,9 @@
                                 <button class="btn btn-outline-success" onclick="markClientInvoicePaid(${invoice.id})" title="Mark Paid">
                                     <i class="bi bi-check-circle"></i>
                                 </button>
+                                <button class="btn btn-outline-success" onclick="sendInvoiceToWhatsApp(${invoice.id})" title="Send to WhatsApp">
+                                    <i class="bi bi-whatsapp"></i>
+                                </button>
                                 <button class="btn btn-outline-info" onclick="printClientInvoice(${invoice.id})" title="Print">
                                     <i class="bi bi-printer"></i>
                                 </button>
@@ -3582,6 +3585,67 @@
         function printWriterInvoice(invoiceId) {
             // Placeholder for print writer invoice functionality
             alert(`Print Writer Invoice ${invoiceId} - to be implemented`);
+        }
+
+        function sendInvoiceToWhatsApp(invoiceId) {
+            const invoice = appData.clientInvoices.find(inv => inv.id === invoiceId);
+            if (!invoice) {
+                alert('Invoice not found');
+                return;
+            }
+
+            const client = appData.clients.find(c => c.id === invoice.clientId);
+            if (!client || !client.whatsapp) {
+                alert('Client WhatsApp number not found');
+                return;
+            }
+
+            // Format the invoice message
+            const invoiceMessage = formatInvoiceMessage(invoice, client);
+            
+            // Clean WhatsApp number (remove any formatting)
+            const whatsappNumber = client.whatsapp.replace(/[^0-9]/g, '');
+            
+            // Create WhatsApp URL
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(invoiceMessage)}`;
+            
+            // Open WhatsApp
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function formatInvoiceMessage(invoice, client) {
+            // Format the invoice message for WhatsApp
+            let message = `🧾 *INVOICE*\n\n`;
+            message += `📋 *Invoice #:* ${invoice.invoiceNumber}\n`;
+            message += `👤 *Client:* ${client.name}\n`;
+            message += `📅 *Date:* ${new Date(invoice.createdAt).toLocaleDateString()}\n`;
+            message += `⏰ *Due Date:* ${new Date(invoice.dueDate).toLocaleDateString()}\n\n`;
+            
+            message += `📝 *ORDER DETAILS:*\n`;
+            message += `${'─'.repeat(30)}\n`;
+            
+            invoice.orders.forEach((order, index) => {
+                message += `${index + 1}. *${order.orderId}*\n`;
+                message += `   📖 ${order.topic}\n`;
+                message += `   📊 ${order.wordCount} words\n`;
+                message += `   💰 Amount: $${order.price.toFixed(2)}\n`;
+                message += `   💳 Paid: $${order.amountPaid.toFixed(2)}\n`;
+                message += `   ⚠️ Balance: $${order.balance.toFixed(2)}\n\n`;
+            });
+            
+            message += `${'─'.repeat(30)}\n`;
+            message += `💰 *TOTAL AMOUNT:* $${invoice.totalAmount.toFixed(2)}\n`;
+            message += `💳 *AMOUNT PAID:* $${invoice.amountPaid.toFixed(2)}\n`;
+            message += `⚠️ *OUTSTANDING BALANCE:* $${invoice.balance.toFixed(2)}\n\n`;
+            
+            if (invoice.notes) {
+                message += `📝 *Notes:* ${invoice.notes}\n\n`;
+            }
+            
+            message += `🙏 *Thank you for your business!*\n`;
+            message += `💬 Please reply to confirm receipt of this invoice.`;
+            
+            return message;
         }
 
         // === ORDER ID GENERATION FUNCTIONS ===
