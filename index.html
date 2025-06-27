@@ -806,6 +806,12 @@
             <!-- Invoice Filters -->
             <div class="data-card mb-4">
                 <div class="row g-3">
+                    <div class="col-md-2">
+                        <select class="form-select" id="currencySelector" onchange="changeCurrency()">
+                            <option value="$">USD ($)</option>
+                            <option value="£">GBP (£)</option>
+                        </select>
+                    </div>
                     <div class="col-md-3">
                         <select class="form-select" id="clientInvoiceFilter" onchange="renderClientInvoices()">
                             <option value="all">All Invoices</option>
@@ -814,12 +820,12 @@
                             <option value="pending">Pending</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <select class="form-select" id="clientFilterSelect" onchange="renderClientInvoices()">
                             <option value="all">All Clients</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <input type="text" class="form-control" id="clientInvoiceSearch" placeholder="Search invoices..." onkeyup="renderClientInvoices()">
                     </div>
                 </div>
@@ -1357,11 +1363,12 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Create Client Invoice</h5>
+                    <h5 class="modal-title" id="clientInvoiceModalTitle">Create Client Invoice</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="clientInvoiceForm">
+                        <input type="hidden" id="clientInvoiceId" value="">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="invoiceClient" class="form-label">Client *</label>
@@ -1390,8 +1397,28 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Total Amount</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <select class="form-select" id="invoiceCurrency" style="max-width: 80px;" onchange="updateInvoiceCurrency()">
+                                        <option value="$">$</option>
+                                        <option value="£">£</option>
+                                    </select>
                                     <input type="text" class="form-control" id="invoiceTotalAmount" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="invoiceAmountPaid" class="form-label">Amount Paid</label>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="amountPaidCurrency">$</span>
+                                    <input type="number" class="form-control" id="invoiceAmountPaid" step="0.01" min="0" value="0" onchange="calculateInvoiceBalance()" oninput="calculateInvoiceBalance()">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Outstanding Balance</label>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="balanceCurrency">$</span>
+                                    <input type="text" class="form-control" id="invoiceBalance" readonly>
                                 </div>
                             </div>
                         </div>
@@ -1415,11 +1442,12 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Create Writer Invoice</h5>
+                    <h5 class="modal-title" id="writerInvoiceModalTitle">Create Writer Invoice</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="writerInvoiceForm">
+                        <input type="hidden" id="writerInvoiceId" value="">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="invoiceWriter" class="form-label">Writer *</label>
@@ -2230,7 +2258,7 @@
             if (totalOrdersEl) totalOrdersEl.textContent = totalOrders;
             if (pendingOrdersEl) pendingOrdersEl.textContent = pendingOrders;
             if (dueTodayEl) dueTodayEl.textContent = dueToday;
-            if (totalRevenueEl) totalRevenueEl.textContent = `$${totalRevenue.toFixed(2)}`;
+            if (totalRevenueEl) totalRevenueEl.textContent = `${formatCurrency(totalRevenue)}`;
 
             console.log('Dashboard stats updated');
         }
@@ -2485,7 +2513,7 @@
             const paidCount = appData.orders.filter(order => order.paymentStatus === 'paid').length;
             const pendingCount = appData.orders.filter(order => order.paymentStatus !== 'paid').length;
 
-            document.getElementById('paymentsRevenue').textContent = `$${totalRevenue.toFixed(2)}`;
+            document.getElementById('paymentsRevenue').textContent = `${formatCurrency(totalRevenue)}`;
             document.getElementById('paymentsOutstanding').textContent = `$${totalOutstanding.toFixed(2)}`;
             document.getElementById('paymentsPaidCount').textContent = paidCount;
             document.getElementById('paymentsPendingCount').textContent = pendingCount;
@@ -3110,10 +3138,10 @@
                             <div class="small">${ordersList}</div>
                             <small class="text-muted">${invoice.orders.length} order(s)</small>
                         </td>
-                        <td>$${invoice.totalAmount.toFixed(2)}</td>
-                        <td>$${invoice.amountPaid.toFixed(2)}</td>
+                        <td>${formatCurrency(invoice.totalAmount)}</td>
+                        <td>${formatCurrency(invoice.amountPaid)}</td>
                         <td>
-                            <div class="${invoice.balance > 0 ? 'text-danger fw-bold' : 'text-success'}">$${invoice.balance.toFixed(2)}</div>
+                            <div class="${invoice.balance > 0 ? 'text-danger fw-bold' : 'text-success'}">${formatCurrency(invoice.balance)}</div>
                         </td>
                         <td><span class="status-badge payment-${invoice.paymentStatus}">${invoice.paymentStatus.toUpperCase()}</span></td>
                         <td>
@@ -3129,9 +3157,6 @@
                                 </button>
                                 <button class="btn btn-outline-success" onclick="sendInvoiceToWhatsApp(${invoice.id})" title="Send to WhatsApp">
                                     <i class="bi bi-whatsapp"></i>
-                                </button>
-                                <button class="btn btn-outline-info" onclick="printClientInvoice(${invoice.id})" title="Print">
-                                    <i class="bi bi-printer"></i>
                                 </button>
                                 <button class="btn btn-outline-warning" onclick="generateInvoiceExcel(appData.clientInvoices.find(inv => inv.id === ${invoice.id}), appData.clients.find(c => c.id === appData.clientInvoices.find(inv => inv.id === ${invoice.id}).clientId))" title="Download Excel">
                                     <i class="bi bi-file-earmark-excel"></i>
@@ -3192,9 +3217,9 @@
                             <small class="text-muted">${invoice.assignments.length} assignment(s)</small>
                         </td>
                         <td>$${invoice.totalEarnings.toFixed(2)}</td>
-                        <td>$${invoice.amountPaid.toFixed(2)}</td>
+                        <td>${formatCurrency(invoice.amountPaid)}</td>
                         <td>
-                            <div class="${invoice.balance > 0 ? 'text-danger fw-bold' : 'text-success'}">$${invoice.balance.toFixed(2)}</div>
+                            <div class="${invoice.balance > 0 ? 'text-danger fw-bold' : 'text-success'}">${formatCurrency(invoice.balance)}</div>
                         </td>
                         <td><span class="status-badge payment-${invoice.paymentStatus}">${invoice.paymentStatus.toUpperCase()}</span></td>
                         <td>
@@ -3207,9 +3232,6 @@
                                 </button>
                                 <button class="btn btn-outline-success" onclick="markWriterInvoicePaid(${invoice.id})" title="Mark Paid">
                                     <i class="bi bi-check-circle"></i>
-                                </button>
-                                <button class="btn btn-outline-info" onclick="printWriterInvoice(${invoice.id})" title="Print">
-                                    <i class="bi bi-printer"></i>
                                 </button>
                             </div>
                         </td>
@@ -3244,7 +3266,7 @@
             document.getElementById('invoiceTotalAmount').value = '';
             document.getElementById('invoiceNotes').value = '';
             
-            showModal('clientInvoiceModal');
+            new bootstrap.Modal(document.getElementById('clientInvoiceModal')).show();
         }
 
         function createWriterInvoice() {
@@ -3273,7 +3295,7 @@
             document.getElementById('writerTotalEarnings').value = '';
             document.getElementById('writerInvoiceNotes').value = '';
             
-            showModal('writerInvoiceModal');
+            new bootstrap.Modal(document.getElementById('writerInvoiceModal')).show();
         }
 
         function loadClientOrders() {
@@ -3414,10 +3436,12 @@
         }
 
         function saveClientInvoice() {
+            const invoiceId = document.getElementById('clientInvoiceId').value;
             const clientId = document.getElementById('invoiceClient').value;
             const invoiceNumber = document.getElementById('invoiceNumber').value;
             const dueDate = document.getElementById('invoiceDueDate').value;
             const notes = document.getElementById('invoiceNotes').value;
+            const invoiceAmountPaid = parseFloat(document.getElementById('invoiceAmountPaid').value) || 0;
             
             if (!clientId || !dueDate) {
                 alert('Please fill in all required fields');
@@ -3433,13 +3457,11 @@
             }
             
             let totalAmount = 0;
-            let amountPaid = 0;
             
             checkboxes.forEach(checkbox => {
                 const orderId = parseInt(checkbox.value);
                 const order = appData.orders.find(o => o.id === orderId);
                 if (order) {
-                    const balance = order.price - order.amountPaid;
                     selectedOrders.push({
                         orderId: order.orderId || generateOrderId(order),
                         orderNumber: order.id,
@@ -3447,37 +3469,118 @@
                         topic: order.topic,
                         wordCount: order.wordCount,
                         price: order.price,
-                        amountPaid: order.amountPaid,
-                        balance: balance,
-                        paymentStatus: order.paymentStatus,
+                        amountPaid: 0, // Will be allocated from invoice total
+                        balance: order.price,
+                        paymentStatus: 'pending',
                         status: order.status,
                         deadline: order.deadline
                     });
                     totalAmount += order.price;
-                    amountPaid += order.amountPaid;
                 }
             });
             
-            const client = appData.clients.find(c => c.id == clientId);
-            const newInvoice = {
-                id: appData.clientInvoices.length + 1,
-                invoiceNumber: invoiceNumber,
-                clientId: parseInt(clientId),
-                clientName: client.name,
-                orders: selectedOrders,
-                totalAmount: totalAmount,
-                amountPaid: amountPaid,
-                balance: totalAmount - amountPaid,
-                paymentStatus: amountPaid === 0 ? 'pending' : (amountPaid === totalAmount ? 'paid' : 'partial'),
-                createdAt: new Date().toISOString(),
-                dueDate: dueDate,
-                notes: notes
-            };
+            // Use the editable amount paid from the form
+            const amountPaid = invoiceAmountPaid;
             
-            appData.clientInvoices.push(newInvoice);
+            // Allocate payment to orders (oldest first)
+            if (amountPaid > 0) {
+                allocatePaymentToOldestOrders(selectedOrders, amountPaid);
+            }
+            
+            const client = appData.clients.find(c => c.id == clientId);
+            
+            if (invoiceId) {
+                // Update existing invoice
+                const existingInvoice = appData.clientInvoices.find(inv => inv.id == invoiceId);
+                if (existingInvoice) {
+                    // Check if payment amount has changed
+                    const oldAmountPaid = existingInvoice.amountPaid;
+                    const newAmountPaid = amountPaid;
+                    const paymentDifference = newAmountPaid - oldAmountPaid;
+                    
+                    if (paymentDifference > 0) {
+                        // Allocate payment to oldest unpaid/partial orders
+                        allocatePaymentToOldestOrders(selectedOrders, paymentDifference);
+                    }
+                    
+                    // Update invoice
+                    existingInvoice.orders = selectedOrders;
+                    existingInvoice.totalAmount = totalAmount;
+                    existingInvoice.amountPaid = amountPaid;
+                    existingInvoice.balance = totalAmount - amountPaid;
+                    existingInvoice.paymentStatus = amountPaid === 0 ? 'pending' : (amountPaid === totalAmount ? 'paid' : 'partial');
+                    existingInvoice.dueDate = dueDate;
+                    existingInvoice.notes = notes;
+                    existingInvoice.updatedAt = new Date().toISOString();
+                    
+                    showNotification('Client invoice updated successfully', 'success');
+                }
+            } else {
+                // Create new invoice
+                const newInvoice = {
+                    id: appData.clientInvoices.length + 1,
+                    invoiceNumber: invoiceNumber,
+                    clientId: parseInt(clientId),
+                    clientName: client.name,
+                    orders: selectedOrders,
+                    totalAmount: totalAmount,
+                    amountPaid: amountPaid,
+                    balance: totalAmount - amountPaid,
+                    paymentStatus: amountPaid === 0 ? 'pending' : (amountPaid === totalAmount ? 'paid' : 'partial'),
+                    createdAt: new Date().toISOString(),
+                    dueDate: dueDate,
+                    notes: notes
+                };
+                
+                appData.clientInvoices.push(newInvoice);
+                showNotification('Client invoice created successfully', 'success');
+            }
+            
             renderClientInvoices();
             hideModal('clientInvoiceModal');
-            showNotification('Client invoice created successfully', 'success');
+        }
+        
+        function allocatePaymentToOldestOrders(orders, paymentAmount) {
+            // Sort orders by deadline (oldest first) and payment status (unpaid/partial first)
+            const sortedOrders = orders.sort((a, b) => {
+                // Prioritize unpaid and partial orders
+                if (a.paymentStatus === 'pending' && b.paymentStatus !== 'pending') return -1;
+                if (a.paymentStatus !== 'pending' && b.paymentStatus === 'pending') return 1;
+                if (a.paymentStatus === 'partial' && b.paymentStatus === 'paid') return -1;
+                if (a.paymentStatus === 'paid' && b.paymentStatus === 'partial') return 1;
+                
+                // Then sort by deadline (oldest first)
+                return new Date(a.deadline) - new Date(b.deadline);
+            });
+            
+            let remainingPayment = paymentAmount;
+            
+            for (const order of sortedOrders) {
+                if (remainingPayment <= 0) break;
+                
+                const orderBalance = order.balance;
+                if (orderBalance > 0) {
+                    const paymentForThisOrder = Math.min(remainingPayment, orderBalance);
+                    order.amountPaid += paymentForThisOrder;
+                    order.balance -= paymentForThisOrder;
+                    
+                    // Update payment status
+                    if (order.balance === 0) {
+                        order.paymentStatus = 'paid';
+                    } else {
+                        order.paymentStatus = 'partial';
+                    }
+                    
+                    remainingPayment -= paymentForThisOrder;
+                    
+                    // Also update the original order in appData
+                    const originalOrder = appData.orders.find(o => o.id === order.orderNumber);
+                    if (originalOrder) {
+                        originalOrder.amountPaid = order.amountPaid;
+                        originalOrder.paymentStatus = order.paymentStatus;
+                    }
+                }
+            }
         }
 
         function saveWriterInvoice() {
@@ -3551,13 +3654,100 @@
         }
 
         function editClientInvoice(invoiceId) {
-            // Placeholder for edit client invoice functionality
-            alert(`Edit Client Invoice ${invoiceId} - to be implemented`);
+            const invoice = appData.clientInvoices.find(inv => inv.id === invoiceId);
+            if (!invoice) {
+                showNotification('Invoice not found', 'error');
+                return;
+            }
+            
+            // Set editing mode
+            document.getElementById('clientInvoiceModalTitle').textContent = 'Edit Client Invoice';
+            document.getElementById('clientInvoiceId').value = invoice.id;
+            
+            // Populate client dropdown first
+            const clientSelect = document.getElementById('invoiceClient');
+            clientSelect.innerHTML = '<option value="">Select Client</option>';
+            appData.clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.name;
+                clientSelect.appendChild(option);
+            });
+            
+            // Populate form fields
+            document.getElementById('invoiceNumber').value = invoice.invoiceNumber;
+            document.getElementById('invoiceClient').value = invoice.clientId;
+            document.getElementById('invoiceDueDate').value = invoice.dueDate;
+            document.getElementById('invoiceAmountPaid').value = invoice.amountPaid || 0;
+            document.getElementById('invoiceNotes').value = invoice.notes || '';
+            document.getElementById('invoiceTotalAmount').value = invoice.totalAmount || 0;
+            
+            // Load client orders for editing
+            loadClientOrders();
+            
+            // Calculate balance after populating fields
+            setTimeout(() => {
+                calculateInvoiceBalance();
+            }, 200);
+            
+            // Pre-select the orders that are in this invoice
+            setTimeout(() => {
+                invoice.orders.forEach(invoiceOrder => {
+                    const checkbox = document.querySelector(`#clientOrdersList input[value="${invoiceOrder.orderNumber}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }, 100);
+            
+            // Show modal using Bootstrap
+            new bootstrap.Modal(document.getElementById('clientInvoiceModal')).show();
         }
 
         function editWriterInvoice(invoiceId) {
-            // Placeholder for edit writer invoice functionality
-            alert(`Edit Writer Invoice ${invoiceId} - to be implemented`);
+            const invoice = appData.writerInvoices.find(inv => inv.id === invoiceId);
+            if (!invoice) {
+                showNotification('Invoice not found', 'error');
+                return;
+            }
+            
+            // Set editing mode
+            document.getElementById('writerInvoiceModalTitle').textContent = 'Edit Writer Invoice';
+            document.getElementById('writerInvoiceId').value = invoice.id;
+            
+            // Populate writer dropdown first
+            const writerSelect = document.getElementById('invoiceWriter');
+            writerSelect.innerHTML = '<option value="">Select Writer</option>';
+            appData.writers.forEach(writer => {
+                const option = document.createElement('option');
+                option.value = writer.id;
+                option.textContent = writer.name;
+                writerSelect.appendChild(option);
+            });
+            
+            // Populate form fields
+            document.getElementById('writerInvoiceNumber').value = invoice.invoiceNumber;
+            document.getElementById('invoiceWriter').value = invoice.writerId;
+            document.getElementById('writerInvoiceDueDate').value = invoice.dueDate;
+            document.getElementById('writerInvoiceNotes').value = invoice.notes || '';
+            
+            // Load writer assignments for editing
+            loadWriterAssignments();
+            
+            // Pre-select the assignments that are in this invoice
+            setTimeout(() => {
+                if (invoice.assignments) {
+                    invoice.assignments.forEach(invoiceAssignment => {
+                        const checkbox = document.querySelector(`#writerAssignmentsList input[value="${invoiceAssignment.orderNumber}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+            }, 100);
+            
+            // Show modal using Bootstrap
+            new bootstrap.Modal(document.getElementById('writerInvoiceModal')).show();
         }
 
         function markClientInvoicePaid(invoiceId) {
@@ -3582,15 +3772,6 @@
             }
         }
 
-        function printClientInvoice(invoiceId) {
-            // Placeholder for print client invoice functionality
-            alert(`Print Client Invoice ${invoiceId} - to be implemented`);
-        }
-
-        function printWriterInvoice(invoiceId) {
-            // Placeholder for print writer invoice functionality
-            alert(`Print Writer Invoice ${invoiceId} - to be implemented`);
-        }
 
         function sendInvoiceToWhatsApp(invoiceId) {
             const invoice = appData.clientInvoices.find(inv => inv.id === invoiceId);
@@ -3642,9 +3823,9 @@
             });
             
             message += `${'─'.repeat(30)}\n`;
-            message += `💰 *TOTAL AMOUNT:* $${invoice.totalAmount.toFixed(2)}\n`;
-            message += `💳 *AMOUNT PAID:* $${invoice.amountPaid.toFixed(2)}\n`;
-            message += `⚠️ *OUTSTANDING BALANCE:* $${invoice.balance.toFixed(2)}\n\n`;
+            message += `💰 *TOTAL AMOUNT:* ${formatCurrency(invoice.totalAmount)}\n`;
+            message += `💳 *AMOUNT PAID:* ${formatCurrency(invoice.amountPaid)}\n`;
+            message += `⚠️ *OUTSTANDING BALANCE:* ${formatCurrency(invoice.balance)}\n\n`;
             
             if (invoice.notes) {
                 message += `📝 *Notes:* ${invoice.notes}\n\n`;
@@ -3660,105 +3841,74 @@
             // Create a new workbook
             const wb = XLSX.utils.book_new();
             
-            // Prepare invoice data for Excel with professional layout
+            // Prepare invoice data matching the sample format exactly
             const invoiceData = [];
             
-            // Header row with company name and title
-            invoiceData.push(['', '', '', '', '', 'EXCELLENT WRITERS', '', '']);
-            invoiceData.push(['', '', '', '', '', '', '', '']);
+            // Row 1: Header with "EXCELLENT WRITERS" spanning columns A-F
+            invoiceData.push(['EXCELLENT WRITERS', '', '', '', '', '']);
             
-            // Main assignment table header
-            invoiceData.push(['Assignment Name', 'QTY', 'UNIT PRICE', 'TOTAL', '', 'THANK YOU FOR YOUR BUSINESS!', '', '']);
+            // Row 2: Table headers
+            invoiceData.push(['Assignment Name', 'QTY', 'UNIT PRICE', 'TOTAL', '', '']);
             
-            // Assignment rows
-            let currentRow = 3; // Starting after header rows
-            invoice.orders.forEach((order, index) => {
-                const assignmentName = `${index + 1}. ${order.topic || order.subject}`;
-                const qty = 1;
-                const unitPrice = order.price;
-                const total = order.price;
-                
-                invoiceData.push([
-                    assignmentName,
-                    qty,
-                    `$${unitPrice.toFixed(2)}`,
-                    `$${total.toFixed(2)}`,
-                    '',
-                    index === 0 ? '' : '', // Only first row has thank you message above
-                    '',
-                    ''
-                ]);
-                currentRow++;
-            });
+            let paymentInstructionRow = 0;
             
-            // Add example assignments if no orders exist
-            if (invoice.orders.length === 0) {
-                const exampleAssignments = [
-                    '1. Catran Exam',
-                    '2. Prison Exam', 
-                    '3. Nklia exam',
-                    '4. Urer exam',
-                    '5. Shathi exam',
-                    '6. Nbreath exam',
-                    '7. Avinash exam'
-                ];
-                
-                exampleAssignments.forEach((assignment, index) => {
+            // Assignment rows - add real assignments only
+            if (invoice.orders && invoice.orders.length > 0) {
+                invoice.orders.forEach((order, index) => {
                     invoiceData.push([
-                        assignment,
+                        `${index + 1}. ${order.topic || order.subject}`,
                         1,
-                        '$50.00',
-                        '$50.00',
-                        '',
-                        '',
-                        '',
+                        `${currentCurrency}${parseFloat(order.price).toFixed(2)}`,
+                        `${currentCurrency}${parseFloat(order.price).toFixed(2)}`,
+                        index === 0 ? 'THANK YOU FOR YOUR BUSINESS!' : '',
                         ''
                     ]);
-                    currentRow++;
+                    if (index === 0) paymentInstructionRow = invoiceData.length - 1; // Track where thank you is
                 });
             }
             
-            // Add spacing rows
-            invoiceData.push(['', '', '', '', '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', 'On Remitly select send to Kenya Select mode of receiving', '', '']);
-            invoiceData.push(['', '', '', '', '', 'as mobile money transfer', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Then select Safaricom', '', '']);
-            invoiceData.push(['', '', '', '', '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Name: Roy', '', '']);
-            invoiceData.push(['', '', '', '', '', 'last Name: Kimani', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Number: +254748121039', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Country: Kenya', '', '']);
-            invoiceData.push(['', '', '', '', '', 'City: Nairobi', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Mobile acc no: +254748121039', '', '']);
-            invoiceData.push(['', '', '', '', '', 'Email: excellentwriters549@gmail.com', '', '']);
+            // Add payment instructions right after the THANK YOU message (no spacing)
+            let currentRow = paymentInstructionRow + 1;
+            invoiceData[currentRow - 1][4] = 'THANK YOU FOR YOUR BUSINESS!';
+            invoiceData.push(['', '', '', '', 'On Remitly select send to Kenya Select mode of receiving', '']);
+            invoiceData.push(['', '', '', '', 'as mobile money transfer.', '']);
+            invoiceData.push(['', '', '', '', 'Then select Safaricom', '']);
+            invoiceData.push(['', '', '', '', 'Name: Roy', '']);
+            invoiceData.push(['', '', '', '', 'last Name: Kimani', '']);
+            invoiceData.push(['', '', '', '', 'Number: +254748121039', '']);
+            invoiceData.push(['', '', '', '', 'Country: Kenya', '']);
+            invoiceData.push(['', '', '', '', 'City: Nairobi', '']);
+            invoiceData.push(['', '', '', '', 'Mobile acc no: +254748121039', '']);
+            invoiceData.push(['', '', '', '', 'Email: excellentwriters549@gmail.com', '']);
             
-            // Add more spacing before totals
-            invoiceData.push(['', '', '', '', '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', '', '', '']);
+            // Add 1 empty row before totals
+            invoiceData.push(['', '', '', '', '', '']);
             
-            // Financial summary at bottom left
-            invoiceData.push(['', '', '', '', '', '', '', '']);
-            invoiceData.push(['SUB TOTAL', '', '', `$${invoice.totalAmount.toFixed(2)}`, '', '', '', '']);
-            invoiceData.push(['Advance paid', '', '', `$${invoice.amountPaid.toFixed(2)}`, '', '', '', '']);
-            invoiceData.push(['TOTAL Outstanding', '', '', `$${invoice.balance.toFixed(2)}`, '', '', '', '']);
+            // Add totals section
+            invoiceData.push(['', '', 'SUB TOTAL', `${currentCurrency}${parseFloat(invoice.totalAmount).toFixed(2)}`, '', '']);
+            invoiceData.push(['', '', 'Advance paid', `${currentCurrency}${parseFloat(invoice.amountPaid).toFixed(2)}`, '', '']);
+            invoiceData.push(['', '', 'TOTAL Outstanding', `${currentCurrency}${parseFloat(invoice.balance).toFixed(2)}`, '', '']);
             
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(invoiceData);
             
-            // Set column widths for professional layout
+            // Set column widths to match sample format
             ws['!cols'] = [
-                { width: 25 }, // Assignment Name
-                { width: 8 },  // QTY
-                { width: 12 }, // Unit Price
-                { width: 12 }, // Total
-                { width: 3 },  // Spacer
-                { width: 40 }, // Thank you / Payment details
-                { width: 15 }, // Extra space
-                { width: 15 }  // Extra space
+                { width: 30 }, // A - Assignment Name
+                { width: 8 },  // B - QTY
+                { width: 15 }, // C - UNIT PRICE
+                { width: 15 }, // D - TOTAL
+                { width: 35 }, // E - Payment instructions
+                { width: 8 }   // F - Extra
             ];
             
-            // Professional styling
-            const companyHeaderStyle = {
+            // Merge cells for header row (A1:F1)
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } } // Merge A1:F1 for header
+            ];
+            
+            // Header styling to match sample (blue background, white text)
+            const headerStyle = {
                 font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
                 alignment: { horizontal: 'center', vertical: 'center' },
                 fill: { fgColor: { rgb: '4472C4' } },
@@ -3770,10 +3920,11 @@
                 }
             };
             
+            // Table header styling (row 2)
             const tableHeaderStyle = {
-                font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+                font: { bold: true, sz: 11, color: { rgb: '000000' } },
                 alignment: { horizontal: 'center', vertical: 'center' },
-                fill: { fgColor: { rgb: '5B9BD5' } },
+                fill: { fgColor: { rgb: 'B6C9E6' } },
                 border: {
                     top: { style: 'thin', color: { rgb: '000000' } },
                     left: { style: 'thin', color: { rgb: '000000' } },
@@ -3782,27 +3933,10 @@
                 }
             };
             
-            const thankYouStyle = {
-                font: { bold: true, sz: 12, color: { rgb: '000000' } },
-                alignment: { horizontal: 'left', vertical: 'center' },
-                fill: { fgColor: { rgb: 'F2F2F2' } }
-            };
-            
-            const dataRowStyle = {
+            // Data row styling with borders
+            const dataStyle = {
                 font: { sz: 10 },
                 alignment: { horizontal: 'left', vertical: 'center' },
-                border: {
-                    top: { style: 'thin', color: { rgb: 'CCCCCC' } },
-                    left: { style: 'thin', color: { rgb: 'CCCCCC' } },
-                    bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
-                    right: { style: 'thin', color: { rgb: 'CCCCCC' } }
-                }
-            };
-            
-            const totalStyle = {
-                font: { bold: true, sz: 11 },
-                alignment: { horizontal: 'left', vertical: 'center' },
-                fill: { fgColor: { rgb: 'E7E6E6' } },
                 border: {
                     top: { style: 'thin', color: { rgb: '000000' } },
                     left: { style: 'thin', color: { rgb: '000000' } },
@@ -3811,40 +3945,38 @@
                 }
             };
             
-            const paymentDetailsStyle = {
+            // Center alignment for numbers
+            const numberStyle = {
                 font: { sz: 10 },
-                alignment: { horizontal: 'left', vertical: 'center' }
+                alignment: { horizontal: 'center', vertical: 'center' },
+                border: {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
+                }
             };
             
-            // Apply styles to company header
-            if (ws['F1']) ws['F1'].s = companyHeaderStyle;
+            // Apply header style
+            if (ws['A1']) ws['A1'].s = headerStyle;
             
-            // Apply styles to table headers (row 3)
-            ['A3', 'B3', 'C3', 'D3'].forEach(cell => {
+            // Apply table header styles (row 2)
+            ['A2', 'B2', 'C2', 'D2'].forEach(cell => {
                 if (ws[cell]) ws[cell].s = tableHeaderStyle;
             });
             
-            // Apply thank you style
-            if (ws['F3']) ws['F3'].s = thankYouStyle;
-            
-            // Apply borders and styling to data rows (starting from row 4)
-            for (let row = 4; row <= invoiceData.length; row++) {
-                ['A', 'B', 'C', 'D'].forEach(col => {
+            // Apply data styles to all cells
+            for (let row = 3; row <= invoiceData.length; row++) {
+                ['A', 'B', 'C', 'D', 'E', 'F'].forEach(col => {
                     const cellRef = col + row;
-                    if (ws[cellRef] && ws[cellRef].v !== '') {
-                        if (ws[cellRef].v.toString().includes('TOTAL') || ws[cellRef].v.toString().includes('SUB TOTAL') || ws[cellRef].v.toString().includes('Advance')) {
-                            ws[cellRef].s = totalStyle;
+                    if (ws[cellRef]) {
+                        if (col === 'B' || col === 'C' || col === 'D') {
+                            ws[cellRef].s = numberStyle;
                         } else {
-                            ws[cellRef].s = dataRowStyle;
+                            ws[cellRef].s = dataStyle;
                         }
                     }
                 });
-                
-                // Style payment details
-                const paymentCell = 'F' + row;
-                if (ws[paymentCell] && ws[paymentCell].v !== '') {
-                    ws[paymentCell].s = paymentDetailsStyle;
-                }
             }
             
             // Add worksheet to workbook
@@ -3959,7 +4091,7 @@
                     paymentStatus: invoice.balance > 0 ? (invoice.amountPaid > 0 ? 'partial' : 'pending') : 'paid',
                     createdAt: new Date().toISOString(),
                     dueDate: oldestOrder.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                    notes: invoice.balance > 0 ? `Outstanding balance: $${invoice.balance.toFixed(2)}` : 'Fully paid'
+                    notes: invoice.balance > 0 ? `Outstanding balance: ${formatCurrency(invoice.balance)}` : 'Fully paid'
                 };
             });
             
@@ -4046,7 +4178,7 @@
                         new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() : 
                         new Date().toISOString(),
                     notes: invoice.balance > 0 ? 
-                        `Outstanding earnings: $${invoice.balance.toFixed(2)} (${invoice.assignments.filter(a => a.paymentStatus !== 'paid').length} assignments)` : 
+                        `Outstanding earnings: ${formatCurrency(invoice.balance)} (${invoice.assignments.filter(a => a.paymentStatus !== 'paid').length} assignments)` : 
                         'All assignments paid'
                 };
             });
@@ -4202,6 +4334,78 @@
             
             // Reset select to default option
             select.value = '';
+        }
+
+        // Currency management
+        let currentCurrency = '$';
+
+        function changeCurrency() {
+            const selector = document.getElementById('currencySelector');
+            currentCurrency = selector.value;
+            
+            // Update all displays
+            renderClientInvoices();
+            renderWriterInvoices();
+            updateDashboard();
+            updatePaymentsSection();
+        }
+
+        function formatCurrency(amount) {
+            return `${currentCurrency}${amount.toFixed(2)}`;
+        }
+
+        function updateInvoiceCurrency() {
+            const selectedCurrency = document.getElementById('invoiceCurrency').value;
+            currentCurrency = selectedCurrency;
+            
+            // Update currency symbols in the form
+            document.getElementById('amountPaidCurrency').textContent = selectedCurrency;
+            document.getElementById('balanceCurrency').textContent = selectedCurrency;
+            
+            // Update all displays
+            renderClientInvoices();
+            renderWriterInvoices();
+        }
+
+        function calculateInvoiceBalance() {
+            const totalAmount = parseFloat(document.getElementById('invoiceTotalAmount').value) || 0;
+            const amountPaid = parseFloat(document.getElementById('invoiceAmountPaid').value) || 0;
+            const balance = totalAmount - amountPaid;
+            document.getElementById('invoiceBalance').value = balance.toFixed(2);
+        }
+
+        function updateClientTotal() {
+            let totalAmount = 0;
+            const checkboxes = document.querySelectorAll('#clientOrdersList input[type="checkbox"]:checked');
+            
+            checkboxes.forEach(checkbox => {
+                const orderId = parseInt(checkbox.value);
+                const order = appData.orders.find(o => o.id === orderId);
+                if (order) {
+                    totalAmount += order.price;
+                }
+            });
+            
+            document.getElementById('invoiceTotalAmount').value = totalAmount.toFixed(2);
+            calculateInvoiceBalance();
+        }
+
+        function createNewClientInvoice() {
+            // Reset form for creating new invoice
+            document.getElementById('clientInvoiceModalTitle').textContent = 'Create Client Invoice';
+            document.getElementById('clientInvoiceId').value = '';
+            document.getElementById('clientInvoiceForm').reset();
+            document.getElementById('clientOrdersList').innerHTML = '<p class="text-muted mb-0">Select a client to view available orders</p>';
+            new bootstrap.Modal(document.getElementById('clientInvoiceModal')).show();
+        }
+
+        function createNewWriterInvoice() {
+            // Reset form for creating new invoice
+            document.getElementById('writerInvoiceModalTitle').textContent = 'Create Writer Invoice';
+            document.getElementById('writerInvoiceId').value = '';
+            document.getElementById('writerInvoiceForm').reset();
+            document.getElementById('writerAssignmentsList').innerHTML = '<p class="text-muted mb-0">Select a writer to view available assignments</p>';
+            new bootstrap.Modal(document.getElementById('writerInvoiceModal')).show();
         }
     </script>
 </body>
