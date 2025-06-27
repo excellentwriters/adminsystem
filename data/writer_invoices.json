@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1,
+    "invoiceNumber": "WR-INV-001",
+    "writerId": 1,
+    "writerName": "Alice Johnson",
+    "assignments": [
+      {
+        "orderId": "CS-ML-25-A1X",
+        "orderNumber": 1,
+        "clientName": "John Doe",
+        "subject": "Computer Science",
+        "topic": "Machine Learning Algorithm Implementation",
+        "wordCount": 2000,
+        "writerRate": 0.15,
+        "totalEarnings": 300.00,
+        "amountPaid": 300.00,
+        "balance": 0.00,
+        "paymentStatus": "paid",
+        "status": "in-progress",
+        "orderCreatedAt": "2025-06-20T10:00:00"
+      },
+      {
+        "orderId": "DS-SEG-25-C3Z",
+        "orderNumber": 3,
+        "clientName": "Mike Johnson",
+        "subject": "Data Science",
+        "topic": "Customer Segmentation Analysis",
+        "wordCount": 2500,
+        "writerRate": 0.15,
+        "totalEarnings": 375.00,
+        "amountPaid": 0.00,
+        "balance": 375.00,
+        "paymentStatus": "pending",
+        "status": "not-started",
+        "orderCreatedAt": "2025-06-22T11:00:00"
+      }
+    ],
+    "totalEarnings": 675.00,
+    "amountPaid": 300.00,
+    "balance": 375.00,
+    "paymentStatus": "partial",
+    "createdAt": "2025-06-20T10:00:00",
+    "dueDate": "2025-07-05T23:59",
+    "notes": "Payment flows to oldest assignments first. Outstanding: $375.00 (1 assignment)"
+  },
+  {
+    "id": 2,
+    "invoiceNumber": "WR-INV-002",
+    "writerId": 2,
+    "writerName": "Bob Wilson",
+    "assignments": [
+      {
+        "orderId": "BS-MKT-25-B2Y",
+        "orderNumber": 2,
+        "clientName": "Jane Smith",
+        "subject": "Business Studies",
+        "topic": "Marketing Strategy Analysis for E-commerce",
+        "wordCount": 1500,
+        "writerRate": 0.12,
+        "totalEarnings": 180.00,
+        "amountPaid": 180.00,
+        "balance": 0.00,
+        "paymentStatus": "paid",
+        "status": "complete",
+        "orderCreatedAt": "2025-06-15T14:30:00"
+      }
+    ],
+    "totalEarnings": 180.00,
+    "amountPaid": 180.00,
+    "balance": 0.00,
+    "paymentStatus": "paid",
+    "createdAt": "2025-06-15T14:30:00",
+    "dueDate": "2025-06-30T23:59",
+    "notes": "All assignments paid in full"
+  }
+]
