@@ -413,9 +413,9 @@
         }
 
         .logout-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
+            position: fixed;
+            bottom: 1rem;
+            left: 1rem;
             background: var(--danger-color);
             color: white;
             border: none;
@@ -424,10 +424,21 @@
             font-size: 0.875rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            z-index: 1050;
         }
 
         .logout-btn:hover {
             background: #dc2626;
+        }
+
+        .order-id-display {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            letter-spacing: 1px;
+            font-size: 0.95em;
+            padding: 2px 6px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .login-error {
@@ -520,18 +531,23 @@
                         Writers
                     </a>
                 </div>
+                <div class="nav-item">
+                    <a href="#client-invoices" class="nav-link" data-section="client-invoices">
+                        <i class="bi bi-receipt"></i>
+                        Client Invoices
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#writer-invoices" class="nav-link" data-section="writer-invoices">
+                        <i class="bi bi-file-earmark-text"></i>
+                        Writer Invoices
+                    </a>
+                </div>
             </nav>
             <div class="mt-auto p-3">
-                <button class="btn btn-outline-light btn-sm w-100 mb-2" onclick="exportAllData()">
-                    <i class="bi bi-download me-1"></i>Export All Data
-                </button>
-                <button class="btn btn-outline-light btn-sm w-100 mb-2" onclick="saveAllData()">
-                    <i class="bi bi-save me-1"></i>Save to JSON Files
-                </button>
-                <button class="btn btn-outline-light btn-sm w-100" onclick="document.getElementById('importFile').click()">
-                    <i class="bi bi-upload me-1"></i>Import Data
-                </button>
-                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+                <div class="text-center text-muted small">
+                    <i class="bi bi-gear"></i> Assignment System
+                </div>
             </div>
         </div>
 
@@ -545,13 +561,6 @@
                 <p class="mt-2">Loading data from JSON files...</p>
             </div>
 
-            <!-- Data Source Info -->
-             <!--
-            <div class="data-source-info" id="dataSourceInfo" style="display: none;">
-                <i class="bi bi-database me-2"></i>
-                <strong>Data Source:</strong> <span id="dataSourceText">Loading from JSON files...</span>
-            </div>
-            -->
 
             <!-- Dashboard Section -->
             <div id="dashboard-section" class="content-section active">
@@ -634,6 +643,7 @@
                         <table class="table table-dark table-hover mb-0">
                             <thead>
                                 <tr>
+                                    <th>Order ID</th>
                                     <th>Client</th>
                                     <th>Topic</th>
                                     <th>Deadline</th>
@@ -658,6 +668,7 @@
                         <table class="table table-dark table-hover mb-0">
                             <thead>
                                 <tr>
+                                    <th>Order ID</th>
                                     <th>Client</th>
                                     <th>Topic</th>
                                     <th>Deadline</th>
@@ -752,7 +763,7 @@
                     <div class="col-lg-6">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="orderSearchInput" placeholder="Search orders...">
+                            <input type="text" class="form-control" id="orderSearchInput" placeholder="Search by order ID, client, topic, or writer...">
                         </div>
                     </div>
                 </div>
@@ -763,6 +774,7 @@
                         <table class="table table-dark table-hover mb-0">
                             <thead>
                                 <tr>
+                                    <th>Order ID</th>
                                     <th>Client</th>
                                     <th>Topic</th>
                                     <th>Deadline</th>
@@ -780,8 +792,120 @@
                 </div>
             </div>
 
-            <!-- Payments Section -->
-            <div id="payments-section" class="content-section">
+        <!-- Client Invoices Section -->
+        <div id="client-invoices-section" class="content-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title">Client Invoices</h2>
+                <button class="btn btn-primary" onclick="createClientInvoice()">
+                    <i class="bi bi-plus-circle"></i> Create Invoice
+                </button>
+            </div>
+
+            <!-- Invoice Filters -->
+            <div class="data-card mb-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <select class="form-select" id="clientInvoiceFilter" onchange="renderClientInvoices()">
+                            <option value="all">All Invoices</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partially Paid</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="clientFilterSelect" onchange="renderClientInvoices()">
+                            <option value="all">All Clients</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="clientInvoiceSearch" placeholder="Search invoices..." onkeyup="renderClientInvoices()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Invoices Table -->
+            <div class="data-card">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Client</th>
+                                <th>Orders</th>
+                                <th>Total Amount</th>
+                                <th>Amount Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientInvoicesTableBody">
+                            <!-- Client invoices will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Writer Invoices Section -->
+        <div id="writer-invoices-section" class="content-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title">Writer Invoices</h2>
+                <button class="btn btn-primary" onclick="createWriterInvoice()">
+                    <i class="bi bi-plus-circle"></i> Create Invoice
+                </button>
+            </div>
+
+            <!-- Invoice Filters -->
+            <div class="data-card mb-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <select class="form-select" id="writerInvoiceFilter" onchange="renderWriterInvoices()">
+                            <option value="all">All Invoices</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partially Paid</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="writerFilterSelect" onchange="renderWriterInvoices()">
+                            <option value="all">All Writers</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="writerInvoiceSearch" placeholder="Search invoices..." onkeyup="renderWriterInvoices()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Writer Invoices Table -->
+            <div class="data-card">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Writer</th>
+                                <th>Assignments</th>
+                                <th>Total Earnings</th>
+                                <th>Amount Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="writerInvoicesTableBody">
+                            <!-- Writer invoices will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Section -->
+        <div id="payments-section" class="content-section">
                 <div class="header-section">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -921,9 +1045,9 @@
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
-    </div>
 
     <!-- Client Modal -->
     <div class="modal fade" id="clientModal" tabindex="-1">
@@ -1226,6 +1350,122 @@
         </div>
     </div>
 
+    <!-- Client Invoice Modal -->
+    <div class="modal fade" id="clientInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Client Invoice</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="clientInvoiceForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="invoiceClient" class="form-label">Client *</label>
+                                <select class="form-select" id="invoiceClient" required onchange="loadClientOrders()">
+                                    <option value="">Select Client</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="invoiceNumber" class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" id="invoiceNumber" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Select Orders (Unpaid/Partially Paid) *</label>
+                            <div id="clientOrdersList" class="border rounded p-3 bg-dark">
+                                <p class="text-muted mb-0">Select a client to view available orders</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="invoiceDueDate" class="form-label">Due Date</label>
+                                <input type="datetime-local" class="form-control" id="invoiceDueDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Total Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="text" class="form-control" id="invoiceTotalAmount" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="invoiceNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="invoiceNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveClientInvoice()">Create Invoice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Writer Invoice Modal -->
+    <div class="modal fade" id="writerInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Writer Invoice</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="writerInvoiceForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="invoiceWriter" class="form-label">Writer *</label>
+                                <select class="form-select" id="invoiceWriter" required onchange="loadWriterAssignments()">
+                                    <option value="">Select Writer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="writerInvoiceNumber" class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" id="writerInvoiceNumber" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Select Assignments (Completed/In-Progress) *</label>
+                            <div id="writerAssignmentsList" class="border rounded p-3 bg-dark">
+                                <p class="text-muted mb-0">Select a writer to view available assignments</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="writerInvoiceDueDate" class="form-label">Due Date</label>
+                                <input type="datetime-local" class="form-control" id="writerInvoiceDueDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Total Earnings</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="text" class="form-control" id="writerTotalEarnings" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="writerInvoiceNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="writerInvoiceNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveWriterInvoice()">Create Invoice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 
@@ -1240,7 +1480,9 @@
             clients: './data/clients.json',
             orders: './data/orders.json',
             writers: './data/writers.json',
-            payments: './data/payments.json'
+            payments: './data/payments.json',
+            client_invoices: './data/client_invoices.json',
+            writer_invoices: './data/writer_invoices.json'
         };
 
         // Authentication data
@@ -1255,6 +1497,8 @@
             orders: [],
             writers: [],
             payments: [],
+            clientInvoices: [],
+            writerInvoices: [],
             settings: {
                 currency: "USD",
                 dateFormat: "MM/DD/YYYY",
@@ -1491,21 +1735,8 @@
         }
 
         function updateDataSourceInfo() {
-            const infoDiv = document.getElementById('dataSourceInfo');
-            const textSpan = document.getElementById('dataSourceText');
-            
-            if (dataSource === 'json') {
-                textSpan.textContent = `Successfully loaded from JSON files: ${appData.clients.length} clients, ${appData.orders.length} orders, ${appData.writers.length} writers, ${appData.payments.length} payments`;
-                infoDiv.className = 'data-source-info bg-success bg-opacity-10 border-success';
-            } else if (dataSource === 'embedded') {
-                textSpan.textContent = `Using embedded data (file:// protocol): ${appData.clients.length} clients, ${appData.orders.length} orders, ${appData.writers.length} writers, ${appData.payments.length} payments`;
-                infoDiv.className = 'data-source-info bg-info bg-opacity-10 border-info';
-            } else {
-                textSpan.textContent = 'Using fallback sample data - JSON files not found. Use "Save to JSON Files" to create them.';
-                infoDiv.className = 'data-source-info bg-warning bg-opacity-10 border-warning';
-            }
-            
-            infoDiv.style.display = 'block';
+            // Data source info removed - no longer needed
+            console.log(`Data loaded successfully: ${appData.clients.length} clients, ${appData.orders.length} orders, ${appData.writers.length} writers, ${appData.payments.length} payments`);
         }
 
         // Load authentication data
@@ -1543,11 +1774,13 @@
                     }
                 };
 
-                const [clientsData, ordersData, writersData, paymentsData] = await Promise.all([
+                const [clientsData, ordersData, writersData, paymentsData, clientInvoicesData, writerInvoicesData] = await Promise.all([
                     loadFile(JSON_PATHS.clients),
                     loadFile(JSON_PATHS.orders),
                     loadFile(JSON_PATHS.writers),
-                    loadFile(JSON_PATHS.payments)
+                    loadFile(JSON_PATHS.payments),
+                    loadFile(JSON_PATHS.client_invoices),
+                    loadFile(JSON_PATHS.writer_invoices)
                 ]);
 
                 let hasValidData = false;
@@ -1578,6 +1811,20 @@
                     hasValidData = true;
                 } else {
                     appData.payments = fallbackData.payments;
+                }
+
+                if (clientInvoicesData && Array.isArray(clientInvoicesData) && clientInvoicesData.length > 0) {
+                    appData.clientInvoices = clientInvoicesData;
+                    hasValidData = true;
+                } else {
+                    appData.clientInvoices = [];
+                }
+
+                if (writerInvoicesData && Array.isArray(writerInvoicesData) && writerInvoicesData.length > 0) {
+                    appData.writerInvoices = writerInvoicesData;
+                    hasValidData = true;
+                } else {
+                    appData.writerInvoices = [];
                 }
 
                 dataSource = hasValidData ? 'json' : 'fallback';
@@ -1910,6 +2157,14 @@
                 case 'writers':
                     renderWriters();
                     break;
+                case 'client-invoices':
+                    renderClientInvoices();
+                    populateClientFilters();
+                    break;
+                case 'writer-invoices':
+                    renderWriterInvoices();
+                    populateWriterFilters();
+                    break;
             }
         }
 
@@ -1987,7 +2242,7 @@
 
             tbody.innerHTML = '';
             if (dueTodayOrders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No orders due today</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No orders due today</td></tr>';
                 return;
             }
 
@@ -1998,11 +2253,15 @@
                 tbody.innerHTML += `
                     <tr class="due-today-row">
                         <td>
+                            <div class="fw-bold text-primary order-id-display">${order.orderId || generateOrderId(order)}</div>
+                            <small class="text-muted">ID: ${order.id}</small>
+                        </td>
+                        <td>
                             <div class="fw-semibold">${client?.name || 'Unknown'}</div>
                             ${client?.whatsapp ? `<a href="https://wa.me/${client.whatsapp.replace(/[^0-9]/g, '')}" class="whatsapp-link small" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a>` : ''}
                         </td>
                         <td>
-                            <div class="fw-semibold">${order.topic}</div>
+                            <div class="fw-semibold">${order.orderId || generateOrderId(order)} - ${order.topic}</div>
                             <small class="text-muted">${order.wordCount} words</small>
                             ${order.codeInvolved ? '<span class="badge bg-info ms-1">Code</span>' : ''}
                         </td>
@@ -2044,7 +2303,7 @@
 
             tbody.innerHTML = '';
             if (recentOrders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No recent orders</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No recent orders</td></tr>';
                 return;
             }
 
@@ -2053,10 +2312,14 @@
                 tbody.innerHTML += `
                     <tr>
                         <td>
+                            <div class="fw-bold text-primary order-id-display">${order.orderId || generateOrderId(order)}</div>
+                            <small class="text-muted">ID: ${order.id}</small>
+                        </td>
+                        <td>
                             <div class="fw-semibold">${client?.name || 'Unknown'}</div>
                         </td>
                         <td>
-                            <div class="fw-semibold">${order.topic}</div>
+                            <div class="fw-semibold">${order.orderId || generateOrderId(order)} - ${order.topic}</div>
                             <small class="text-muted">${order.wordCount} words</small>
                         </td>
                         <td>
@@ -2147,10 +2410,13 @@
                 filteredOrders = filteredOrders.filter(order => {
                     const client = appData.clients.find(c => c.id === order.clientId);
                     const writer = appData.writers.find(w => w.id === order.writerId);
+                    const orderId = order.orderId || generateOrderId(order);
                     return (
                         client?.name.toLowerCase().includes(searchTerm) ||
                         order.topic.toLowerCase().includes(searchTerm) ||
-                        writer?.name.toLowerCase().includes(searchTerm)
+                        writer?.name.toLowerCase().includes(searchTerm) ||
+                        order.id.toString().includes(searchTerm) ||
+                        orderId.toLowerCase().includes(searchTerm)
                     );
                 });
             }
@@ -2166,11 +2432,15 @@
                 tbody.innerHTML += `
                     <tr ${isDueToday ? 'class="due-today-row"' : ''}>
                         <td>
+                            <div class="fw-bold text-primary order-id-display">${order.orderId || generateOrderId(order)}</div>
+                            <small class="text-muted">ID: ${order.id}</small>
+                        </td>
+                        <td>
                             <div class="fw-semibold">${client?.name || 'Unknown'}</div>
                             ${client?.whatsapp ? `<a href="https://wa.me/${client.whatsapp.replace(/[^0-9]/g, '')}" class="whatsapp-link small" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a>` : ''}
                         </td>
                         <td>
-                            <div class="fw-semibold">${order.topic}</div>
+                            <div class="fw-semibold">${order.orderId || generateOrderId(order)} - ${order.topic}</div>
                             <small class="text-muted">${order.wordCount} words</small>
                             ${order.codeInvolved ? '<span class="badge bg-info ms-1">Code</span>' : ''}
                             ${isDueToday ? '<span class="badge bg-danger ms-1">Due Today</span>' : ''}
@@ -2754,6 +3024,911 @@
             
             // Reset file input
             event.target.value = '';
+        }
+
+        // === INVOICE MANAGEMENT FUNCTIONS ===
+
+        function populateClientFilters() {
+            const clientSelect = document.getElementById('clientFilterSelect');
+            if (!clientSelect) return;
+            
+            // Clear existing options except "All Clients"
+            clientSelect.innerHTML = '<option value="all">All Clients</option>';
+            
+            // Add client options
+            appData.clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.name;
+                clientSelect.appendChild(option);
+            });
+        }
+
+        function populateWriterFilters() {
+            const writerSelect = document.getElementById('writerFilterSelect');
+            if (!writerSelect) return;
+            
+            // Clear existing options except "All Writers"
+            writerSelect.innerHTML = '<option value="all">All Writers</option>';
+            
+            // Add writer options
+            appData.writers.forEach(writer => {
+                const option = document.createElement('option');
+                option.value = writer.id;
+                option.textContent = writer.name;
+                writerSelect.appendChild(option);
+            });
+        }
+
+        function renderClientInvoices() {
+            const tbody = document.getElementById('clientInvoicesTableBody');
+            if (!tbody) return;
+
+            // Auto-generate invoices from unpaid and partially paid orders
+            const autoInvoices = generateClientInvoicesFromOrders();
+            appData.clientInvoices = autoInvoices;
+
+            const statusFilter = document.getElementById('clientInvoiceFilter')?.value || 'all';
+            const clientFilter = document.getElementById('clientFilterSelect')?.value || 'all';
+            const searchTerm = document.getElementById('clientInvoiceSearch')?.value.toLowerCase() || '';
+
+            let filteredInvoices = appData.clientInvoices;
+
+            // Apply filters
+            if (statusFilter !== 'all') {
+                filteredInvoices = filteredInvoices.filter(invoice => invoice.paymentStatus === statusFilter);
+            }
+            if (clientFilter !== 'all') {
+                filteredInvoices = filteredInvoices.filter(invoice => invoice.clientId == clientFilter);
+            }
+            if (searchTerm) {
+                filteredInvoices = filteredInvoices.filter(invoice => 
+                    invoice.invoiceNumber.toLowerCase().includes(searchTerm) ||
+                    invoice.clientName.toLowerCase().includes(searchTerm) ||
+                    invoice.notes.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            tbody.innerHTML = '';
+            filteredInvoices.forEach(invoice => {
+                const ordersList = invoice.orders.map(order => 
+                    `<div class="small">${order.orderId} - ${order.topic}</div>`
+                ).join('');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-primary">${invoice.invoiceNumber}</div>
+                            <small class="text-muted">Created: ${new Date(invoice.createdAt).toLocaleDateString()}</small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">${invoice.clientName}</div>
+                        </td>
+                        <td>
+                            <div class="small">${ordersList}</div>
+                            <small class="text-muted">${invoice.orders.length} order(s)</small>
+                        </td>
+                        <td>$${invoice.totalAmount.toFixed(2)}</td>
+                        <td>$${invoice.amountPaid.toFixed(2)}</td>
+                        <td>
+                            <div class="${invoice.balance > 0 ? 'text-danger fw-bold' : 'text-success'}">$${invoice.balance.toFixed(2)}</div>
+                        </td>
+                        <td><span class="status-badge payment-${invoice.paymentStatus}">${invoice.paymentStatus.toUpperCase()}</span></td>
+                        <td>
+                            <div>${new Date(invoice.dueDate).toLocaleDateString()}</div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editClientInvoice(${invoice.id})" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-success" onclick="markClientInvoicePaid(${invoice.id})" title="Mark Paid">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="printClientInvoice(${invoice.id})" title="Print">
+                                    <i class="bi bi-printer"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderWriterInvoices() {
+            const tbody = document.getElementById('writerInvoicesTableBody');
+            if (!tbody) return;
+
+            // Auto-generate invoices from completed and in-progress orders with payment flow
+            const autoInvoices = generateWriterInvoicesFromOrders();
+            appData.writerInvoices = autoInvoices;
+
+            const statusFilter = document.getElementById('writerInvoiceFilter')?.value || 'all';
+            const writerFilter = document.getElementById('writerFilterSelect')?.value || 'all';
+            const searchTerm = document.getElementById('writerInvoiceSearch')?.value.toLowerCase() || '';
+
+            let filteredInvoices = appData.writerInvoices;
+
+            // Apply filters
+            if (statusFilter !== 'all') {
+                filteredInvoices = filteredInvoices.filter(invoice => invoice.paymentStatus === statusFilter);
+            }
+            if (writerFilter !== 'all') {
+                filteredInvoices = filteredInvoices.filter(invoice => invoice.writerId == writerFilter);
+            }
+            if (searchTerm) {
+                filteredInvoices = filteredInvoices.filter(invoice => 
+                    invoice.invoiceNumber.toLowerCase().includes(searchTerm) ||
+                    invoice.writerName.toLowerCase().includes(searchTerm) ||
+                    invoice.notes.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            tbody.innerHTML = '';
+            filteredInvoices.forEach(invoice => {
+                const assignmentsList = invoice.assignments.map(assignment => 
+                    `<div class="small">${assignment.orderId} - ${assignment.topic}</div>`
+                ).join('');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-primary">${invoice.invoiceNumber}</div>
+                            <small class="text-muted">Created: ${new Date(invoice.createdAt).toLocaleDateString()}</small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">${invoice.writerName}</div>
+                        </td>
+                        <td>
+                            <div class="small">${assignmentsList}</div>
+                            <small class="text-muted">${invoice.assignments.length} assignment(s)</small>
+                        </td>
+                        <td>$${invoice.totalEarnings.toFixed(2)}</td>
+                        <td>$${invoice.amountPaid.toFixed(2)}</td>
+                        <td>
+                            <div class="${invoice.balance > 0 ? 'text-danger fw-bold' : 'text-success'}">$${invoice.balance.toFixed(2)}</div>
+                        </td>
+                        <td><span class="status-badge payment-${invoice.paymentStatus}">${invoice.paymentStatus.toUpperCase()}</span></td>
+                        <td>
+                            <div>${new Date(invoice.dueDate).toLocaleDateString()}</div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editWriterInvoice(${invoice.id})" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-success" onclick="markWriterInvoicePaid(${invoice.id})" title="Mark Paid">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="printWriterInvoice(${invoice.id})" title="Print">
+                                    <i class="bi bi-printer"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function createClientInvoice() {
+            // Populate client dropdown
+            const clientSelect = document.getElementById('invoiceClient');
+            clientSelect.innerHTML = '<option value="">Select Client</option>';
+            
+            appData.clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.name;
+                clientSelect.appendChild(option);
+            });
+            
+            // Generate next invoice number
+            const nextInvoiceNum = `CL-INV-${(appData.clientInvoices.length + 1).toString().padStart(3, '0')}`;
+            document.getElementById('invoiceNumber').value = nextInvoiceNum;
+            
+            // Set default due date (7 days from now)
+            const defaultDueDate = new Date();
+            defaultDueDate.setDate(defaultDueDate.getDate() + 7);
+            document.getElementById('invoiceDueDate').value = defaultDueDate.toISOString().slice(0, 16);
+            
+            // Clear form
+            document.getElementById('clientOrdersList').innerHTML = '<p class="text-muted mb-0">Select a client to view available orders</p>';
+            document.getElementById('invoiceTotalAmount').value = '';
+            document.getElementById('invoiceNotes').value = '';
+            
+            showModal('clientInvoiceModal');
+        }
+
+        function createWriterInvoice() {
+            // Populate writer dropdown
+            const writerSelect = document.getElementById('invoiceWriter');
+            writerSelect.innerHTML = '<option value="">Select Writer</option>';
+            
+            appData.writers.forEach(writer => {
+                const option = document.createElement('option');
+                option.value = writer.id;
+                option.textContent = writer.name;
+                writerSelect.appendChild(option);
+            });
+            
+            // Generate next invoice number
+            const nextInvoiceNum = `WR-INV-${(appData.writerInvoices.length + 1).toString().padStart(3, '0')}`;
+            document.getElementById('writerInvoiceNumber').value = nextInvoiceNum;
+            
+            // Set default due date (14 days from now)
+            const defaultDueDate = new Date();
+            defaultDueDate.setDate(defaultDueDate.getDate() + 14);
+            document.getElementById('writerInvoiceDueDate').value = defaultDueDate.toISOString().slice(0, 16);
+            
+            // Clear form
+            document.getElementById('writerAssignmentsList').innerHTML = '<p class="text-muted mb-0">Select a writer to view available assignments</p>';
+            document.getElementById('writerTotalEarnings').value = '';
+            document.getElementById('writerInvoiceNotes').value = '';
+            
+            showModal('writerInvoiceModal');
+        }
+
+        function loadClientOrders() {
+            const clientId = document.getElementById('invoiceClient').value;
+            const ordersList = document.getElementById('clientOrdersList');
+            
+            if (!clientId) {
+                ordersList.innerHTML = '<p class="text-muted mb-0">Select a client to view available orders</p>';
+                document.getElementById('invoiceTotalAmount').value = '';
+                return;
+            }
+            
+            // Find unpaid and partially paid orders for this client
+            const clientOrders = appData.orders.filter(order => 
+                order.clientId == clientId && 
+                (order.paymentStatus === 'pending' || order.paymentStatus === 'partial')
+            );
+            
+            if (clientOrders.length === 0) {
+                ordersList.innerHTML = '<p class="text-warning mb-0">No unpaid or partially paid orders found for this client</p>';
+                document.getElementById('invoiceTotalAmount').value = '';
+                return;
+            }
+            
+            let totalAmount = 0;
+            let ordersHtml = '';
+            
+            clientOrders.forEach(order => {
+                const balance = order.price - order.amountPaid;
+                totalAmount += balance;
+                
+                ordersHtml += `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" value="${order.id}" 
+                               id="order_${order.id}" checked onchange="updateClientTotal()">
+                        <label class="form-check-label" for="order_${order.id}">
+                            <div class="d-flex justify-content-between">
+                                <span>${order.orderId || generateOrderId(order)} - ${order.topic}</span>
+                                <span class="text-warning">Balance: $${balance.toFixed(2)}</span>
+                            </div>
+                            <small class="text-muted d-block">
+                                Total: $${order.price.toFixed(2)} | Paid: $${order.amountPaid.toFixed(2)}
+                            </small>
+                        </label>
+                    </div>
+                `;
+            });
+            
+            ordersList.innerHTML = ordersHtml;
+            document.getElementById('invoiceTotalAmount').value = totalAmount.toFixed(2);
+        }
+
+        function loadWriterAssignments() {
+            const writerId = document.getElementById('invoiceWriter').value;
+            const assignmentsList = document.getElementById('writerAssignmentsList');
+            
+            if (!writerId) {
+                assignmentsList.innerHTML = '<p class="text-muted mb-0">Select a writer to view available assignments</p>';
+                document.getElementById('writerTotalEarnings').value = '';
+                return;
+            }
+            
+            // Find completed and in-progress orders for this writer
+            const writerOrders = appData.orders.filter(order => 
+                order.writerId == writerId && 
+                (order.status === 'complete' || order.status === 'in-progress')
+            );
+            
+            if (writerOrders.length === 0) {
+                assignmentsList.innerHTML = '<p class="text-warning mb-0">No completed or in-progress assignments found for this writer</p>';
+                document.getElementById('writerTotalEarnings').value = '';
+                return;
+            }
+            
+            const writer = appData.writers.find(w => w.id == writerId);
+            const writerRate = writer?.rate || 0.10;
+            
+            let totalEarnings = 0;
+            let assignmentsHtml = '';
+            
+            writerOrders.forEach(order => {
+                const earnings = order.wordCount * writerRate;
+                totalEarnings += earnings;
+                
+                assignmentsHtml += `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" value="${order.id}" 
+                               id="assignment_${order.id}" checked onchange="updateWriterTotal()">
+                        <label class="form-check-label" for="assignment_${order.id}">
+                            <div class="d-flex justify-content-between">
+                                <span>${order.orderId || generateOrderId(order)} - ${order.topic}</span>
+                                <span class="text-success">Earnings: $${earnings.toFixed(2)}</span>
+                            </div>
+                            <small class="text-muted d-block">
+                                ${order.wordCount} words × $${writerRate.toFixed(3)}/word | Status: ${order.status}
+                            </small>
+                        </label>
+                    </div>
+                `;
+            });
+            
+            assignmentsList.innerHTML = assignmentsHtml;
+            document.getElementById('writerTotalEarnings').value = totalEarnings.toFixed(2);
+        }
+
+        function updateClientTotal() {
+            const checkboxes = document.querySelectorAll('#clientOrdersList input[type="checkbox"]:checked');
+            let total = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const orderId = parseInt(checkbox.value);
+                const order = appData.orders.find(o => o.id === orderId);
+                if (order) {
+                    total += (order.price - order.amountPaid);
+                }
+            });
+            
+            document.getElementById('invoiceTotalAmount').value = total.toFixed(2);
+        }
+
+        function updateWriterTotal() {
+            const checkboxes = document.querySelectorAll('#writerAssignmentsList input[type="checkbox"]:checked');
+            const writerId = document.getElementById('invoiceWriter').value;
+            const writer = appData.writers.find(w => w.id == writerId);
+            const writerRate = writer?.rate || 0.10;
+            
+            let total = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const orderId = parseInt(checkbox.value);
+                const order = appData.orders.find(o => o.id === orderId);
+                if (order) {
+                    total += (order.wordCount * writerRate);
+                }
+            });
+            
+            document.getElementById('writerTotalEarnings').value = total.toFixed(2);
+        }
+
+        function saveClientInvoice() {
+            const clientId = document.getElementById('invoiceClient').value;
+            const invoiceNumber = document.getElementById('invoiceNumber').value;
+            const dueDate = document.getElementById('invoiceDueDate').value;
+            const notes = document.getElementById('invoiceNotes').value;
+            
+            if (!clientId || !dueDate) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            const selectedOrders = [];
+            const checkboxes = document.querySelectorAll('#clientOrdersList input[type="checkbox"]:checked');
+            
+            if (checkboxes.length === 0) {
+                alert('Please select at least one order');
+                return;
+            }
+            
+            let totalAmount = 0;
+            let amountPaid = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const orderId = parseInt(checkbox.value);
+                const order = appData.orders.find(o => o.id === orderId);
+                if (order) {
+                    const balance = order.price - order.amountPaid;
+                    selectedOrders.push({
+                        orderId: order.orderId || generateOrderId(order),
+                        orderNumber: order.id,
+                        subject: order.subject,
+                        topic: order.topic,
+                        wordCount: order.wordCount,
+                        price: order.price,
+                        amountPaid: order.amountPaid,
+                        balance: balance,
+                        paymentStatus: order.paymentStatus,
+                        status: order.status,
+                        deadline: order.deadline
+                    });
+                    totalAmount += order.price;
+                    amountPaid += order.amountPaid;
+                }
+            });
+            
+            const client = appData.clients.find(c => c.id == clientId);
+            const newInvoice = {
+                id: appData.clientInvoices.length + 1,
+                invoiceNumber: invoiceNumber,
+                clientId: parseInt(clientId),
+                clientName: client.name,
+                orders: selectedOrders,
+                totalAmount: totalAmount,
+                amountPaid: amountPaid,
+                balance: totalAmount - amountPaid,
+                paymentStatus: amountPaid === 0 ? 'pending' : (amountPaid === totalAmount ? 'paid' : 'partial'),
+                createdAt: new Date().toISOString(),
+                dueDate: dueDate,
+                notes: notes
+            };
+            
+            appData.clientInvoices.push(newInvoice);
+            renderClientInvoices();
+            hideModal('clientInvoiceModal');
+            showNotification('Client invoice created successfully', 'success');
+        }
+
+        function saveWriterInvoice() {
+            const writerId = document.getElementById('invoiceWriter').value;
+            const invoiceNumber = document.getElementById('writerInvoiceNumber').value;
+            const dueDate = document.getElementById('writerInvoiceDueDate').value;
+            const notes = document.getElementById('writerInvoiceNotes').value;
+            
+            if (!writerId || !dueDate) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            const selectedAssignments = [];
+            const checkboxes = document.querySelectorAll('#writerAssignmentsList input[type="checkbox"]:checked');
+            
+            if (checkboxes.length === 0) {
+                alert('Please select at least one assignment');
+                return;
+            }
+            
+            const writer = appData.writers.find(w => w.id == writerId);
+            const writerRate = writer?.rate || 0.10;
+            let totalEarnings = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const orderId = parseInt(checkbox.value);
+                const order = appData.orders.find(o => o.id === orderId);
+                if (order) {
+                    const earnings = order.wordCount * writerRate;
+                    const client = appData.clients.find(c => c.id === order.clientId);
+                    
+                    selectedAssignments.push({
+                        orderId: order.orderId || generateOrderId(order),
+                        orderNumber: order.id,
+                        clientName: client?.name || 'Unknown',
+                        subject: order.subject,
+                        topic: order.topic,
+                        wordCount: order.wordCount,
+                        writerRate: writerRate,
+                        totalEarnings: earnings,
+                        amountPaid: 0,
+                        balance: earnings,
+                        paymentStatus: 'pending',
+                        status: order.status,
+                        orderCreatedAt: order.createdAt
+                    });
+                    totalEarnings += earnings;
+                }
+            });
+            
+            const newInvoice = {
+                id: appData.writerInvoices.length + 1,
+                invoiceNumber: invoiceNumber,
+                writerId: parseInt(writerId),
+                writerName: writer.name,
+                assignments: selectedAssignments,
+                totalEarnings: totalEarnings,
+                amountPaid: 0,
+                balance: totalEarnings,
+                paymentStatus: 'pending',
+                createdAt: new Date().toISOString(),
+                dueDate: dueDate,
+                notes: notes
+            };
+            
+            appData.writerInvoices.push(newInvoice);
+            renderWriterInvoices();
+            hideModal('writerInvoiceModal');
+            showNotification('Writer invoice created successfully', 'success');
+        }
+
+        function editClientInvoice(invoiceId) {
+            // Placeholder for edit client invoice functionality
+            alert(`Edit Client Invoice ${invoiceId} - to be implemented`);
+        }
+
+        function editWriterInvoice(invoiceId) {
+            // Placeholder for edit writer invoice functionality
+            alert(`Edit Writer Invoice ${invoiceId} - to be implemented`);
+        }
+
+        function markClientInvoicePaid(invoiceId) {
+            const invoice = appData.clientInvoices.find(inv => inv.id === invoiceId);
+            if (invoice) {
+                invoice.amountPaid = invoice.totalAmount;
+                invoice.balance = 0;
+                invoice.paymentStatus = 'paid';
+                renderClientInvoices();
+                showNotification('Client invoice marked as paid', 'success');
+            }
+        }
+
+        function markWriterInvoicePaid(invoiceId) {
+            const invoice = appData.writerInvoices.find(inv => inv.id === invoiceId);
+            if (invoice) {
+                invoice.amountPaid = invoice.totalEarnings;
+                invoice.balance = 0;
+                invoice.paymentStatus = 'paid';
+                renderWriterInvoices();
+                showNotification('Writer invoice marked as paid', 'success');
+            }
+        }
+
+        function printClientInvoice(invoiceId) {
+            // Placeholder for print client invoice functionality
+            alert(`Print Client Invoice ${invoiceId} - to be implemented`);
+        }
+
+        function printWriterInvoice(invoiceId) {
+            // Placeholder for print writer invoice functionality
+            alert(`Print Writer Invoice ${invoiceId} - to be implemented`);
+        }
+
+        // === ORDER ID GENERATION FUNCTIONS ===
+        
+        function generateOrderId(order) {
+            // Generate a unique, non-confusing order ID
+            const subjectCodes = {
+                'Computer Science': 'CS',
+                'Data Science': 'DS', 
+                'Business Studies': 'BS',
+                'Mathematics': 'MT',
+                'Physics': 'PH',
+                'Chemistry': 'CH',
+                'Biology': 'BL',
+                'Engineering': 'EN',
+                'Literature': 'LT',
+                'History': 'HS'
+            };
+            
+            const topicAbbreviation = getTopicAbbreviation(order.topic || 'GEN');
+            const subjectCode = subjectCodes[order.subject] || 'GN';
+            const year = new Date(order.createdAt).getFullYear().toString().slice(-2);
+            
+            // Create a unique suffix using letter + number + letter pattern
+            const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Excluding I and O to avoid confusion
+            const letterIndex1 = (order.id - 1) % letters.length;
+            const numberPart = Math.floor((order.id - 1) / letters.length) + 1;
+            const letterIndex2 = ((order.id - 1) + order.clientId) % letters.length;
+            
+            const uniqueSuffix = `${letters[letterIndex1]}${numberPart}${letters[letterIndex2]}`;
+            
+            return `${subjectCode}-${topicAbbreviation}-${year}-${uniqueSuffix}`;
+        }
+        
+        function getTopicAbbreviation(topic) {
+            // Extract meaningful abbreviation from topic
+            const words = topic.split(' ');
+            if (words.length >= 2) {
+                return words.slice(0, 2).map(word => word.substring(0, 2).toUpperCase()).join('');
+            }
+            return topic.substring(0, 3).toUpperCase();
+        }
+
+        // === CLIENT INVOICE GENERATION ===
+        
+        function generateClientInvoicesFromOrders() {
+            // Generate client invoices automatically from unpaid and partially paid orders
+            const clientInvoicesMap = new Map();
+            
+            // Group unpaid and partially paid orders by client
+            appData.orders.forEach(order => {
+                if (order.paymentStatus === 'pending' || order.paymentStatus === 'partial') {
+                    const clientId = order.clientId;
+                    const client = appData.clients.find(c => c.id === clientId);
+                    
+                    if (!clientInvoicesMap.has(clientId)) {
+                        clientInvoicesMap.set(clientId, {
+                            clientId: clientId,
+                            clientName: client?.name || 'Unknown Client',
+                            orders: [],
+                            totalAmount: 0,
+                            amountPaid: 0,
+                            balance: 0
+                        });
+                    }
+                    
+                    const clientInvoice = clientInvoicesMap.get(clientId);
+                    const orderBalance = order.price - order.amountPaid;
+                    
+                    clientInvoice.orders.push({
+                        orderId: order.orderId || generateOrderId(order),
+                        orderNumber: order.id,
+                        subject: order.subject,
+                        topic: order.topic,
+                        wordCount: order.wordCount,
+                        price: order.price,
+                        amountPaid: order.amountPaid,
+                        balance: orderBalance,
+                        paymentStatus: order.paymentStatus,
+                        status: order.status,
+                        deadline: order.deadline
+                    });
+                    
+                    clientInvoice.totalAmount += order.price;
+                    clientInvoice.amountPaid += order.amountPaid;
+                    clientInvoice.balance += orderBalance;
+                }
+            });
+            
+            // Convert map to array and add invoice metadata
+            const generatedInvoices = Array.from(clientInvoicesMap.values()).map((invoice, index) => {
+                const oldestOrder = invoice.orders.reduce((oldest, current) => {
+                    const oldestDate = new Date(oldest.deadline || '9999-12-31');
+                    const currentDate = new Date(current.deadline || '9999-12-31');
+                    return currentDate < oldestDate ? current : oldest;
+                });
+                
+                return {
+                    id: index + 1,
+                    invoiceNumber: `CL-INV-${(index + 1).toString().padStart(3, '0')}`,
+                    ...invoice,
+                    paymentStatus: invoice.balance > 0 ? (invoice.amountPaid > 0 ? 'partial' : 'pending') : 'paid',
+                    createdAt: new Date().toISOString(),
+                    dueDate: oldestOrder.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    notes: invoice.balance > 0 ? `Outstanding balance: $${invoice.balance.toFixed(2)}` : 'Fully paid'
+                };
+            });
+            
+            return generatedInvoices;
+        }
+        
+        function updateClientInvoicesFromOrders() {
+            // Update the client invoices based on current order status
+            const newInvoices = generateClientInvoicesFromOrders();
+            appData.clientInvoices = newInvoices;
+            renderClientInvoices();
+            showNotification('Client invoices updated from current orders', 'success');
+        }
+
+        // === WRITER PAYMENT FLOW SYSTEM ===
+        
+        function generateWriterInvoicesFromOrders() {
+            // Generate writer invoices with chronological payment flow
+            const writerInvoicesMap = new Map();
+            
+            // Group orders by writer
+            appData.orders.forEach(order => {
+                if (order.writerId && (order.status === 'complete' || order.status === 'in-progress')) {
+                    const writerId = order.writerId;
+                    const writer = appData.writers.find(w => w.id === writerId);
+                    
+                    if (!writerInvoicesMap.has(writerId)) {
+                        writerInvoicesMap.set(writerId, {
+                            writerId: writerId,
+                            writerName: writer?.name || 'Unknown Writer',
+                            assignments: [],
+                            totalEarnings: 0,
+                            amountPaid: 0,
+                            balance: 0
+                        });
+                    }
+                    
+                    const writerInvoice = writerInvoicesMap.get(writerId);
+                    const writerEarnings = order.wordCount * (writer?.rate || 0.10);
+                    
+                    writerInvoice.assignments.push({
+                        orderId: order.orderId || generateOrderId(order),
+                        orderNumber: order.id,
+                        clientName: appData.clients.find(c => c.id === order.clientId)?.name || 'Unknown',
+                        subject: order.subject,
+                        topic: order.topic,
+                        wordCount: order.wordCount,
+                        writerRate: writer?.rate || 0.10,
+                        totalEarnings: writerEarnings,
+                        status: order.status,
+                        completedAt: order.status === 'complete' ? order.createdAt : null,
+                        orderCreatedAt: order.createdAt
+                    });
+                    
+                    writerInvoice.totalEarnings += writerEarnings;
+                }
+            });
+            
+            // Apply chronological payment flow for each writer
+            writerInvoicesMap.forEach((invoice, writerId) => {
+                // Sort assignments by creation date (oldest first)
+                invoice.assignments.sort((a, b) => new Date(a.orderCreatedAt) - new Date(b.orderCreatedAt));
+                
+                // Apply payment flow logic
+                const paymentFlow = calculateWriterPaymentFlow(writerId, invoice.assignments);
+                invoice.amountPaid = paymentFlow.totalPaid;
+                invoice.balance = invoice.totalEarnings - invoice.amountPaid;
+                
+                // Update assignment payment status
+                invoice.assignments = paymentFlow.assignments;
+            });
+            
+            // Convert map to array and add invoice metadata
+            const generatedInvoices = Array.from(writerInvoicesMap.values()).map((invoice, index) => {
+                const oldestUnpaidAssignment = invoice.assignments.find(a => a.paymentStatus !== 'paid');
+                
+                return {
+                    id: index + 1,
+                    invoiceNumber: `WR-INV-${(index + 1).toString().padStart(3, '0')}`,
+                    ...invoice,
+                    paymentStatus: invoice.balance > 0 ? (invoice.amountPaid > 0 ? 'partial' : 'pending') : 'paid',
+                    createdAt: new Date().toISOString(),
+                    dueDate: oldestUnpaidAssignment ? 
+                        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() : 
+                        new Date().toISOString(),
+                    notes: invoice.balance > 0 ? 
+                        `Outstanding earnings: $${invoice.balance.toFixed(2)} (${invoice.assignments.filter(a => a.paymentStatus !== 'paid').length} assignments)` : 
+                        'All assignments paid'
+                };
+            });
+            
+            return generatedInvoices;
+        }
+        
+        function calculateWriterPaymentFlow(writerId, assignments) {
+            // Calculate payment flow for writer assignments in chronological order
+            let totalPaid = 0;
+            let remainingPayments = getTotalWriterPayments(writerId);
+            
+            // Sort by creation date (oldest first) for proper flow
+            const sortedAssignments = [...assignments].sort((a, b) => 
+                new Date(a.orderCreatedAt) - new Date(b.orderCreatedAt)
+            );
+            
+            // Apply payments to oldest assignments first
+            const updatedAssignments = sortedAssignments.map(assignment => {
+                const assignmentCopy = { ...assignment };
+                
+                if (remainingPayments >= assignment.totalEarnings) {
+                    // Fully pay this assignment
+                    assignmentCopy.amountPaid = assignment.totalEarnings;
+                    assignmentCopy.balance = 0;
+                    assignmentCopy.paymentStatus = 'paid';
+                    remainingPayments -= assignment.totalEarnings;
+                    totalPaid += assignment.totalEarnings;
+                } else if (remainingPayments > 0) {
+                    // Partially pay this assignment
+                    assignmentCopy.amountPaid = remainingPayments;
+                    assignmentCopy.balance = assignment.totalEarnings - remainingPayments;
+                    assignmentCopy.paymentStatus = 'partial';
+                    totalPaid += remainingPayments;
+                    remainingPayments = 0;
+                } else {
+                    // No payment for this assignment
+                    assignmentCopy.amountPaid = 0;
+                    assignmentCopy.balance = assignment.totalEarnings;
+                    assignmentCopy.paymentStatus = 'pending';
+                }
+                
+                return assignmentCopy;
+            });
+            
+            return {
+                assignments: updatedAssignments,
+                totalPaid: totalPaid
+            };
+        }
+        
+        function getTotalWriterPayments(writerId) {
+            // Calculate total payments made to a specific writer
+            // This would typically come from a payments tracking system
+            // For now, return a mock value - in real implementation, 
+            // this should sum up all payments made to the writer
+            
+            // Mock payment data - replace with actual payment tracking
+            const mockPayments = {
+                1: 300.00, // Writer 1 has received $300
+                2: 180.00, // Writer 2 has received $180
+                3: 0.00,   // Writer 3 has not been paid
+                4: 0.00    // Writer 4 has not been paid
+            };
+            
+            return mockPayments[writerId] || 0;
+        }
+        
+        function updateWriterInvoicesFromOrders() {
+            // Update writer invoices based on current order status and payment flow
+            const newInvoices = generateWriterInvoicesFromOrders();
+            appData.writerInvoices = newInvoices;
+            renderWriterInvoices();
+            showNotification('Writer invoices updated with chronological payment flow', 'success');
+        }
+        
+        function processWriterPayment(writerId, paymentAmount) {
+            // Process a payment to a writer using chronological flow
+            // This function would be called when making a payment to a writer
+            
+            // Update the payment tracking (in real implementation, this would update a payments database)
+            const currentPayments = getTotalWriterPayments(writerId);
+            const newTotalPayments = currentPayments + paymentAmount;
+            
+            // Mock update - in real implementation, save to payments system
+            console.log(`Processing payment of $${paymentAmount} to writer ${writerId}`);
+            console.log(`Total payments to writer will be: $${newTotalPayments}`);
+            
+            // Regenerate invoices with new payment flow
+            updateWriterInvoicesFromOrders();
+            
+            showNotification(`Payment of $${paymentAmount.toFixed(2)} processed for writer. Oldest assignments paid first.`, 'success');
+        }
+
+    </script>
+
+    <!-- Data Actions Dropdown (Bottom Right) -->
+    <div class="data-actions-dropdown">
+        <select class="form-select" id="dataActionsSelect" onchange="handleDataAction()">
+            <option value="">Data Actions...</option>
+            <option value="export">📥 Export All Data</option>
+            <option value="save">💾 Save to JSON Files</option>
+            <option value="import">📤 Import Data</option>
+        </select>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+    </div>
+
+    <style>
+        .data-actions-dropdown {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1040;
+            min-width: 200px;
+        }
+        
+        .data-actions-dropdown .form-select {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .data-actions-dropdown .form-select:focus {
+            background-color: var(--card-bg);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+        
+        .data-actions-dropdown .form-select option {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+    </style>
+
+    <script>
+        function handleDataAction() {
+            const select = document.getElementById('dataActionsSelect');
+            const action = select.value;
+            
+            switch(action) {
+                case 'export':
+                    exportAllData();
+                    break;
+                case 'save':
+                    saveAllData();
+                    break;
+                case 'import':
+                    document.getElementById('importFile').click();
+                    break;
+            }
+            
+            // Reset select to default option
+            select.value = '';
         }
     </script>
 </body>
