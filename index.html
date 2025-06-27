@@ -3608,8 +3608,8 @@
             // Generate Excel file
             generateInvoiceExcel(invoice, client);
 
-            // Create message for WhatsApp with file reference
-            const whatsappMessage = `🧾 *INVOICE READY*\n\nHello ${client.name},\n\nYour invoice ${invoice.invoiceNumber} has been generated.\n\n💰 *Total Amount:* $${invoice.totalAmount.toFixed(2)}\n💳 *Amount Paid:* $${invoice.amountPaid.toFixed(2)}\n⚠️ *Outstanding Balance:* $${invoice.balance.toFixed(2)}\n\n📋 Please find the detailed invoice in Excel format that was just downloaded. Kindly send this file to complete the invoice delivery.\n\n🙏 Thank you for your business!`;
+            // Create simple WhatsApp message since Excel file contains all details
+            const whatsappMessage = `Hello ${client.name},\n\nHere is your assignment invoice ${invoice.invoiceNumber}.\n\nPlease find the detailed invoice attached as an Excel file.\n\nThank you for your business!`;
             
             // Clean WhatsApp number (remove any formatting)
             const whatsappNumber = client.whatsapp.replace(/[^0-9]/g, '');
@@ -3660,93 +3660,120 @@
             // Create a new workbook
             const wb = XLSX.utils.book_new();
             
-            // Prepare invoice data for Excel
+            // Prepare invoice data for Excel with new layout
             const invoiceData = [];
             
-            // Header section
-            invoiceData.push(['INVOICE', '', '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', '']);
-            invoiceData.push(['Invoice Number:', invoice.invoiceNumber, '', '', '', '']);
-            invoiceData.push(['Client Name:', client.name, '', '', '', '']);
-            invoiceData.push(['Client WhatsApp:', client.whatsapp, '', '', '', '']);
-            invoiceData.push(['Client Email:', client.email, '', '', '', '']);
-            invoiceData.push(['Invoice Date:', new Date(invoice.createdAt).toLocaleDateString(), '', '', '', '']);
-            invoiceData.push(['Due Date:', new Date(invoice.dueDate).toLocaleDateString(), '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', '']);
+            // Main assignment table
+            invoiceData.push(['Assignment Name', 'QTY', 'Unit Price', 'Total', '', 'EXCELLENT WRITERS', '', '']);
             
-            // Order details header
-            invoiceData.push(['ORDER DETAILS', '', '', '', '', '']);
-            invoiceData.push(['Order ID', 'Subject', 'Topic', 'Word Count', 'Price', 'Status']);
-            
-            // Order details
-            invoice.orders.forEach(order => {
-                invoiceData.push([
-                    order.orderId,
-                    order.subject,
-                    order.topic,
-                    order.wordCount,
-                    `$${order.price.toFixed(2)}`,
-                    order.paymentStatus
-                ]);
+            // Assignment rows
+            invoice.orders.forEach((order, index) => {
+                const assignmentName = `${index + 1}. ${order.topic || order.subject}`;
+                const qty = 1; // Default quantity
+                const unitPrice = order.price;
+                const total = order.price;
+                
+                if (index === 0) {
+                    // First row includes the thank you note
+                    invoiceData.push([
+                        assignmentName,
+                        qty,
+                        `$${unitPrice.toFixed(2)}`,
+                        `$${total.toFixed(2)}`,
+                        '',
+                        'THANK YOU FOR YOUR BUSINESS!',
+                        '',
+                        ''
+                    ]);
+                } else {
+                    invoiceData.push([
+                        assignmentName,
+                        qty,
+                        `$${unitPrice.toFixed(2)}`,
+                        `$${total.toFixed(2)}`,
+                        '',
+                        '',
+                        '',
+                        ''
+                    ]);
+                }
             });
             
-            invoiceData.push(['', '', '', '', '', '']);
-            
-            // Payment summary
-            invoiceData.push(['PAYMENT SUMMARY', '', '', '', '', '']);
-            invoiceData.push(['Total Amount:', `$${invoice.totalAmount.toFixed(2)}`, '', '', '', '']);
-            invoiceData.push(['Amount Paid:', `$${invoice.amountPaid.toFixed(2)}`, '', '', '', '']);
-            invoiceData.push(['Outstanding Balance:', `$${invoice.balance.toFixed(2)}`, '', '', '', '']);
-            
-            invoiceData.push(['', '', '', '', '', '']);
-            
-            // Payment details section
-            invoiceData.push(['PAYMENT DETAILS', '', '', '', '', '']);
-            invoiceData.push(['Bank Name:', 'ABC Bank', '', '', '', '']);
-            invoiceData.push(['Account Name:', 'Assignment Services Ltd', '', '', '', '']);
-            invoiceData.push(['Account Number:', '1234567890', '', '', '', '']);
-            invoiceData.push(['Swift Code:', 'ABCBKE22', '', '', '', '']);
-            invoiceData.push(['Branch:', 'Main Branch', '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', '']);
-            invoiceData.push(['Alternative Payment Methods:', '', '', '', '', '']);
-            invoiceData.push(['PayPal:', 'payments@assignmentservices.com', '', '', '', '']);
-            invoiceData.push(['M-Pesa (Kenya):', '+254700000000', '', '', '', '']);
-            invoiceData.push(['', '', '', '', '', '']);
-            
-            if (invoice.notes) {
-                invoiceData.push(['Notes:', invoice.notes, '', '', '', '']);
+            // Example assignment (Charan Exam) as requested
+            if (invoice.orders.length === 0) {
+                invoiceData.push([
+                    '1. Charan Exam',
+                    1,
+                    '$50.00',
+                    '$50.00',
+                    '',
+                    'THANK YOU FOR YOUR BUSINESS!',
+                    '',
+                    ''
+                ]);
             }
+            
+            // Add some spacing
+            invoiceData.push(['', '', '', '', '', '', '', '']);
+            
+            // Payment instructions on the right side
+            invoiceData.push(['', '', '', '', '', 'On Remitly select send to Kenya', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Select mode of receiving mobile money transfer', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Then select Safaricom', '', '']);
+            invoiceData.push(['', '', '', '', '', '', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Name: Roy', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Last Name: Kimani', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Number: +254748121039', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Country: Kenya', '', '']);
+            invoiceData.push(['', '', '', '', '', 'City: Nairobi', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Mobile acc no: 254748121029', '', '']);
+            invoiceData.push(['', '', '', '', '', 'Email: excelenow549@ms.com', '', '']);
+            
+            // Financial summary at bottom left
+            invoiceData.push(['', '', '', '', '', '', '', '']);
+            invoiceData.push(['SUB TOTAL', '', '', `$${invoice.totalAmount.toFixed(2)}`, '', '', '', '']);
+            invoiceData.push(['Advance paid', '', '', `$${invoice.amountPaid.toFixed(2)}`, '', '', '', '']);
+            invoiceData.push(['TOTAL Outstanding', '', '', `$${invoice.balance.toFixed(2)}`, '', '', '', '']);
             
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(invoiceData);
             
-            // Set column widths
+            // Set column widths for new layout
             ws['!cols'] = [
-                { width: 20 },
-                { width: 25 },
-                { width: 30 },
-                { width: 15 },
-                { width: 15 },
-                { width: 15 }
+                { width: 30 }, // Assignment Name
+                { width: 8 },  // QTY
+                { width: 15 }, // Unit Price
+                { width: 15 }, // Total
+                { width: 5 },  // Spacer
+                { width: 35 }, // Thank you / Payment details
+                { width: 20 }, // Extra space
+                { width: 20 }  // Extra space
             ];
             
-            // Style the header cells
+            // Style the header row
             const headerStyle = {
-                font: { bold: true, sz: 16 },
+                font: { bold: true, sz: 12 },
                 alignment: { horizontal: 'center' },
                 fill: { fgColor: { rgb: '4472C4' } }
             };
             
-            const sectionHeaderStyle = {
-                font: { bold: true, sz: 12 },
-                fill: { fgColor: { rgb: 'D9E2F3' } }
+            const thankYouStyle = {
+                font: { bold: true, sz: 14 },
+                alignment: { horizontal: 'center' },
+                fill: { fgColor: { rgb: 'FFD700' } }
             };
             
-            // Apply styles to specific cells
+            const totalStyle = {
+                font: { bold: true, sz: 12 },
+                fill: { fgColor: { rgb: 'E6F3FF' } }
+            };
+            
+            // Apply styles to header row
             if (ws['A1']) ws['A1'].s = headerStyle;
-            if (ws['A10']) ws['A10'].s = sectionHeaderStyle;
-            if (ws['A20']) ws['A20'].s = sectionHeaderStyle;
-            if (ws['A26']) ws['A26'].s = sectionHeaderStyle;
+            if (ws['B1']) ws['B1'].s = headerStyle;
+            if (ws['C1']) ws['C1'].s = headerStyle;
+            if (ws['D1']) ws['D1'].s = headerStyle;
+            if (ws['F1']) ws['F1'].s = headerStyle;
             
             // Add worksheet to workbook
             XLSX.utils.book_append_sheet(wb, ws, 'Invoice');
