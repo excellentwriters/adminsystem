@@ -11,19 +11,17 @@
         "subject": "Computer Science",
         "topic": "Machine Learning Algorithm Implementation",
         "wordCount": 2000,
-        "price": 150.00,
-        "amountPaid": 75.00,
-        "balance": 75.00,
+        "price": 150,
+        "amountPaid": 75,
+        "balance": 75,
         "paymentStatus": "partial",
-        "status": "in-progress",
-        "currency": "dollar"
+        "status": "in-progress"
       }
     ],
-    "totalAmount": 150.00,
-    "amountPaid": 75.00,
-    "balance": 75.00,
+    "totalAmount": 150,
+    "amountPaid": 75,
+    "balance": 75,
     "paymentStatus": "partial",
-    "currency": "dollar",
     "createdAt": "2025-06-20T10:00:00",
     "dueDate": "2025-06-30T23:59",
     "notes": "Partial payment received, balance due on completion"
@@ -40,19 +38,17 @@
         "subject": "Data Science",
         "topic": "Customer Segmentation Analysis",
         "wordCount": 2500,
-        "price": 200.00,
-        "amountPaid": 0.00,
-        "balance": 200.00,
+        "price": 200,
+        "amountPaid": 0,
+        "balance": 200,
         "paymentStatus": "pending",
-        "status": "not-started",
-        "currency": "dollar"
+        "status": "not-started"
       }
     ],
-    "totalAmount": 200.00,
-    "amountPaid": 0.00,
-    "balance": 200.00,
+    "totalAmount": 200,
+    "amountPaid": 0,
+    "balance": 200,
     "paymentStatus": "pending",
-    "currency": "dollar",
     "createdAt": "2025-06-22T11:00:00",
     "dueDate": "2025-06-28T15:00",
     "notes": "Awaiting initial payment"
