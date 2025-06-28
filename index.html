@@ -1204,22 +1204,31 @@
                         <!-- Pricing Section -->
                         <div class="payment-summary mb-3">
                             <h6><i class="bi bi-credit-card me-2"></i>Pricing & Payment</h6>
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label for="orderCurrency" class="form-label">Currency *</label>
+                                    <select class="form-select" id="orderCurrency" onchange="updateOrderCurrency()">
+                                        <option value="$">USD ($)</option>
+                                        <option value="£">GBP (£)</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="orderPrice" class="form-label">Quoted Price ($) *</label>
+                                        <label for="orderPrice" class="form-label" id="orderPriceLabel">Quoted Price ($) *</label>
                                         <input type="number" class="form-control" id="orderPrice" step="0.01" required onchange="calculateBalance()">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="orderAmountPaid" class="form-label">Amount Paid ($)</label>
+                                        <label for="orderAmountPaid" class="form-label" id="orderAmountPaidLabel">Amount Paid ($)</label>
                                         <input type="number" class="form-control" id="orderAmountPaid" step="0.01" value="0" onchange="calculateBalance()">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="orderBalance" class="form-label">Balance ($)</label>
+                                        <label for="orderBalance" class="form-label" id="orderBalanceLabel">Balance ($)</label>
                                         <input type="number" class="form-control" id="orderBalance" step="0.01" readonly>
                                     </div>
                                 </div>
@@ -1431,7 +1440,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveClientInvoice()">Create Invoice</button>
+                    <button type="button" class="btn btn-primary" id="clientInvoiceSubmitBtn" onclick="saveClientInvoice()">Create Invoice</button>
                 </div>
             </div>
         </div>
@@ -1495,6 +1504,52 @@
             </div>
         </div>
     </div>
+    
+    <!-- GitHub Settings Modal -->
+    <div class="modal fade" id="githubSettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">GitHub Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="githubSettingsForm">
+                        <div class="mb-3">
+                            <label for="githubOwner" class="form-label">GitHub Username/Organization</label>
+                            <input type="text" class="form-control" id="githubOwner" placeholder="e.g., yourusername">
+                            <small class="text-muted">Your GitHub username or organization name</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="githubRepo" class="form-label">Repository Name</label>
+                            <input type="text" class="form-control" id="githubRepo" placeholder="e.g., AssignmentSystem">
+                            <small class="text-muted">The repository hosting your assignment system</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="githubToken" class="form-label">Personal Access Token</label>
+                            <input type="password" class="form-control" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                            <small class="text-muted">
+                                <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">Generate a token</a> with 'repo' scope
+                            </small>
+                        </div>
+                        <div class="alert alert-info">
+                            <strong>Instructions:</strong>
+                            <ol class="mb-0">
+                                <li>Go to GitHub Settings → Developer settings → Personal access tokens</li>
+                                <li>Generate a new token with 'repo' scope</li>
+                                <li>Copy the token and paste it above</li>
+                                <li>Token will be saved locally in your browser</li>
+                            </ol>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGitHubSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
@@ -1532,7 +1587,11 @@
             settings: {
                 currency: "USD",
                 dateFormat: "MM/DD/YYYY",
-                defaultPaymentStatus: "pending"
+                defaultPaymentStatus: "pending",
+                autoDownloadJSON: false,
+                githubToken: "",
+                githubRepo: "",
+                githubOwner: ""
             }
         };
 
@@ -1745,6 +1804,13 @@
             showSection('dashboard');
             showLoadingSpinner(false);
             updateDataSourceInfo();
+            
+            // Initialize auto-download checkbox state
+            const autoDownloadCheckbox = document.getElementById('autoDownloadJSON');
+            if (autoDownloadCheckbox && appData.settings) {
+                autoDownloadCheckbox.checked = appData.settings.autoDownloadJSON || false;
+            }
+            
             console.log('App initialization complete');
         }
 
@@ -2076,6 +2142,211 @@
             dataSource = 'embedded';
         }
 
+        // Save data to localStorage for persistence
+        function saveDataToLocalStorage() {
+            try {
+                localStorage.setItem('assignmentSystem_appData', JSON.stringify(appData));
+                localStorage.setItem('assignmentSystem_authData', JSON.stringify(authData));
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+
+        // Save data without downloading - for updates
+        async function saveDataOnly() {
+            saveDataToLocalStorage();
+            
+            // Try to save to GitHub if configured
+            if (appData.settings && appData.settings.githubToken && appData.settings.githubRepo) {
+                try {
+                    await saveDataToGitHub();
+                    showNotification('Data successfully saved to GitHub', 'success');
+                } catch (error) {
+                    console.error('Error saving to GitHub:', error);
+                    showNotification('Failed to save to GitHub. Data saved locally.', 'warning');
+                }
+            } else if (appData.settings && appData.settings.autoDownloadJSON) {
+                // Fallback to download if GitHub not configured
+                try {
+                    await downloadAllJSONFiles();
+                    showNotification('JSON files downloaded to your Downloads folder. Copy them to data/ folder.', 'info');
+                } catch (error) {
+                    console.error('Error downloading JSON files:', error);
+                    showNotification('Data saved locally. Use Export to download JSON files.', 'warning');
+                }
+            } else {
+                showNotification('Data saved locally. Configure GitHub or enable auto-download for persistence.', 'info');
+            }
+        }
+        
+        // Function to download all JSON files (browser can't write directly to filesystem)
+        async function downloadAllJSONFiles() {
+            const files = {
+                'auth.json': authData,
+                'clients.json': appData.clients,
+                'orders.json': appData.orders,
+                'writers.json': appData.writers,
+                'payments.json': appData.payments,
+                'client_invoices.json': appData.clientInvoices,
+                'writer_invoices.json': appData.writerInvoices
+            };
+            
+            // Download each file
+            for (const [filename, data] of Object.entries(files)) {
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // Small delay between downloads to prevent browser blocking
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        // GitHub API integration for saving data
+        async function saveDataToGitHub() {
+            const { githubToken, githubRepo, githubOwner } = appData.settings;
+            
+            if (!githubToken || !githubRepo || !githubOwner) {
+                throw new Error('GitHub configuration missing');
+            }
+            
+            const files = {
+                'data/auth.json': authData,
+                'data/clients.json': appData.clients,
+                'data/orders.json': appData.orders,
+                'data/writers.json': appData.writers,
+                'data/payments.json': appData.payments,
+                'data/client_invoices.json': appData.clientInvoices,
+                'data/writer_invoices.json': appData.writerInvoices
+            };
+            
+            // Get the current commit SHA
+            const refResponse = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/git/refs/heads/main`, {
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (!refResponse.ok) {
+                throw new Error('Failed to get repository reference');
+            }
+            
+            const refData = await refResponse.json();
+            const latestCommitSha = refData.object.sha;
+            
+            // Update each file
+            for (const [path, data] of Object.entries(files)) {
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+                
+                // Get current file SHA (if exists)
+                let currentSha = '';
+                try {
+                    const fileResponse = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/contents/${path}`, {
+                        headers: {
+                            'Authorization': `token ${githubToken}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    if (fileResponse.ok) {
+                        const fileData = await fileResponse.json();
+                        currentSha = fileData.sha;
+                    }
+                } catch (e) {
+                    // File doesn't exist, that's ok
+                }
+                
+                // Update or create file
+                const updateResponse = await fetch(`https://api.github.com/repos/${githubOwner}/${githubRepo}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Update ${path} via Assignment System`,
+                        content: content,
+                        sha: currentSha || undefined
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    const error = await updateResponse.json();
+                    throw new Error(`Failed to update ${path}: ${error.message}`);
+                }
+            }
+        }
+        
+        // Legacy function for compatibility - redirects to download
+        async function saveDataToJSONFiles() {
+            const files = {
+                'auth.json': authData,
+                'clients.json': appData.clients,
+                'orders.json': appData.orders,
+                'writers.json': appData.writers,
+                'payments.json': appData.payments,
+                'client_invoices.json': appData.clientInvoices,
+                'writer_invoices.json': appData.writerInvoices
+            };
+            
+            for (const [filename, data] of Object.entries(files)) {
+                try {
+                    const response = await fetch('./save_data.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            filename: filename,
+                            data: data
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(result.error || 'Unknown error occurred');
+                    }
+                } catch (error) {
+                    console.error(`Error saving ${filename}:`, error);
+                    throw error;
+                }
+            }
+        }
+
+        // Load data from localStorage
+        function loadDataFromLocalStorage() {
+            try {
+                const savedAppData = localStorage.getItem('assignmentSystem_appData');
+                const savedAuthData = localStorage.getItem('assignmentSystem_authData');
+                
+                if (savedAppData) {
+                    const parsedData = JSON.parse(savedAppData);
+                    // Merge with existing data, preserving structure
+                    Object.assign(appData, parsedData);
+                }
+                
+                if (savedAuthData) {
+                    const parsedAuthData = JSON.parse(savedAuthData);
+                    Object.assign(authData, parsedAuthData);
+                }
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+            }
+        }
+
         // Save data to JSON files (download functionality)
         async function saveAllData() {
             const files = {
@@ -2083,9 +2354,15 @@
                 'clients.json': appData.clients,
                 'orders.json': appData.orders,
                 'writers.json': appData.writers,
-                'payments.json': appData.payments
+                'payments.json': appData.payments,
+                'clientInvoices.json': appData.clientInvoices,
+                'writerInvoices.json': appData.writerInvoices
             };
 
+            // First save to localStorage for persistence
+            saveDataToLocalStorage();
+            
+            // Then download files for backup
             for (const [filename, data] of Object.entries(files)) {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -2482,8 +2759,8 @@
                         <td><span class="status-badge status-${order.status}">${order.status.replace('-', ' ').toUpperCase()}</span></td>
                         <td>
                             <span class="status-badge payment-${order.paymentStatus}">${order.paymentStatus.toUpperCase()}</span>
-                            <div class="small text-muted">$${order.amountPaid}/$${order.price}</div>
-                            ${balance > 0 ? `<div class="small text-danger">Balance: $${balance.toFixed(2)}</div>` : ''}
+                            <div class="small text-muted">${order.currency || '$'}${order.amountPaid}/${order.currency || '$'}${order.price}</div>
+                            ${balance > 0 ? `<div class="small text-danger">Balance: ${order.currency || '$'}${balance.toFixed(2)}</div>` : ''}
                         </td>
                         <td>
                             <div class="fw-semibold">${writer?.name || 'Unassigned'}</div>
@@ -2647,6 +2924,28 @@
             const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
             if (modal) modal.hide();
         }
+        
+        // Notification function
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            // Add to body
+            document.body.appendChild(notification);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
 
         // Quick Add Client Toggle
         function toggleQuickAddClient() {
@@ -2683,7 +2982,7 @@
         }
 
         // Client Management
-        function saveClient() {
+        async function saveClient() {
             const form = document.getElementById('clientForm');
             const id = document.getElementById('clientId').value;
             const name = document.getElementById('clientName').value.trim();
@@ -2717,6 +3016,7 @@
                 });
             }
 
+            await saveDataOnly();
             updateAllSections();
             if (currentSection === 'clients') renderClients();
             hideModal('clientModal');
@@ -2735,7 +3035,7 @@
             }
         }
 
-        function deleteClient(id) {
+        async function deleteClient(id) {
             const hasOrders = appData.orders.some(order => order.clientId === id);
             if (hasOrders) {
                 alert('Cannot delete client with existing orders. Please delete or reassign orders first.');
@@ -2744,6 +3044,7 @@
 
             if (confirm('Are you sure you want to delete this client?')) {
                 appData.clients = appData.clients.filter(c => c.id !== id);
+                await saveDataOnly();
                 updateAllSections();
                 renderClients();
             }
@@ -2795,7 +3096,8 @@
                 writerId: parseInt(document.getElementById('orderWriter').value) || null,
                 paymentDate: document.getElementById('orderPaymentDate').value || null,
                 paymentMethod: 'bank_transfer',
-                paymentNotes: ''
+                paymentNotes: '',
+                currency: document.getElementById('orderCurrency').value
             };
 
             // Validation
@@ -2818,6 +3120,9 @@
                 });
             }
 
+            // Save data changes
+            saveDataOnly();
+            
             updateAllSections();
             if (currentSection === 'orders') renderOrders();
             if (currentSection === 'dashboard') {
@@ -2846,14 +3151,19 @@
                 document.getElementById('orderCodeInvolved').checked = order.codeInvolved;
                 document.getElementById('orderWriter').value = order.writerId || '';
                 document.getElementById('orderPaymentDate').value = order.paymentDate || '';
+                document.getElementById('orderCurrency').value = order.currency || '$';
+                
+                // Update currency labels
+                updateOrderCurrency();
                 calculateBalance();
                 showModal('orderModal');
             }
         }
 
-        function deleteOrder(id) {
+        async function deleteOrder(id) {
             if (confirm('Are you sure you want to delete this order?')) {
                 appData.orders = appData.orders.filter(o => o.id !== id);
+                await saveDataOnly();
                 updateAllSections();
                 if (currentSection === 'orders') renderOrders();
                 if (currentSection === 'dashboard') {
@@ -2864,7 +3174,7 @@
         }
 
         // Writer Management
-        function saveWriter() {
+        async function saveWriter() {
             const form = document.getElementById('writerForm');
             const id = document.getElementById('writerId').value;
             const name = document.getElementById('writerName').value.trim();
@@ -2900,6 +3210,7 @@
                 });
             }
 
+            await saveDataOnly();
             updateAllSections();
             if (currentSection === 'writers') renderWriters();
             hideModal('writerModal');
@@ -2919,7 +3230,7 @@
             }
         }
 
-        function deleteWriter(id) {
+        async function deleteWriter(id) {
             const hasOrders = appData.orders.some(order => order.writerId === id);
             if (hasOrders) {
                 if (!confirm('This writer has assigned orders. Delete anyway? Orders will become unassigned.')) {
@@ -2935,6 +3246,7 @@
 
             if (confirm('Are you sure you want to delete this writer?')) {
                 appData.writers = appData.writers.filter(w => w.id !== id);
+                await saveDataOnly();
                 updateAllSections();
                 if (currentSection === 'writers') renderWriters();
             }
@@ -2954,7 +3266,7 @@
             }
         }
 
-        function updatePayment() {
+        async function updatePayment() {
             const orderId = parseInt(document.getElementById('paymentOrderId').value);
             const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
             const paymentDate = document.getElementById('paymentDate').value;
@@ -2986,6 +3298,9 @@
                     notes: notes,
                     createdAt: new Date().toISOString()
                 });
+
+                // Save changes
+                await saveDataOnly();
 
                 updateAllSections();
                 renderPayments();
@@ -3241,6 +3556,11 @@
         }
 
         function createClientInvoice() {
+            // Reset modal title and button text for create mode
+            document.getElementById('clientInvoiceModalTitle').textContent = 'Create Client Invoice';
+            document.getElementById('clientInvoiceSubmitBtn').textContent = 'Create Invoice';
+            document.getElementById('clientInvoiceId').value = '';
+            
             // Populate client dropdown
             const clientSelect = document.getElementById('invoiceClient');
             clientSelect.innerHTML = '<option value="">Select Client</option>';
@@ -3265,6 +3585,7 @@
             document.getElementById('clientOrdersList').innerHTML = '<p class="text-muted mb-0">Select a client to view available orders</p>';
             document.getElementById('invoiceTotalAmount').value = '';
             document.getElementById('invoiceNotes').value = '';
+            document.getElementById('invoiceAmountPaid').value = '';
             
             new bootstrap.Modal(document.getElementById('clientInvoiceModal')).show();
         }
@@ -3435,7 +3756,7 @@
             document.getElementById('writerTotalEarnings').value = total.toFixed(2);
         }
 
-        function saveClientInvoice() {
+        async function saveClientInvoice() {
             const invoiceId = document.getElementById('clientInvoiceId').value;
             const clientId = document.getElementById('invoiceClient').value;
             const invoiceNumber = document.getElementById('invoiceNumber').value;
@@ -3473,7 +3794,8 @@
                         balance: order.price,
                         paymentStatus: 'pending',
                         status: order.status,
-                        deadline: order.deadline
+                        deadline: order.deadline,
+                        currency: order.currency || '$'
                     });
                     totalAmount += order.price;
                 }
@@ -3493,30 +3815,64 @@
                 // Update existing invoice
                 const existingInvoice = appData.clientInvoices.find(inv => inv.id == invoiceId);
                 if (existingInvoice) {
-                    // Check if payment amount has changed
-                    const oldAmountPaid = existingInvoice.amountPaid;
-                    const newAmountPaid = amountPaid;
-                    const paymentDifference = newAmountPaid - oldAmountPaid;
+                    // First, reset all orders from the old invoice back to their original state
+                    existingInvoice.orders.forEach(oldOrder => {
+                        const originalOrder = appData.orders.find(o => o.id === oldOrder.orderNumber);
+                        if (originalOrder) {
+                            // Subtract the previously allocated payment from this invoice
+                            originalOrder.amountPaid -= oldOrder.amountPaid;
+                            if (originalOrder.amountPaid < 0) originalOrder.amountPaid = 0;
+                            
+                            // Recalculate payment status
+                            if (originalOrder.amountPaid === 0) {
+                                originalOrder.paymentStatus = 'pending';
+                            } else if (originalOrder.amountPaid >= originalOrder.price) {
+                                originalOrder.paymentStatus = 'paid';
+                            } else {
+                                originalOrder.paymentStatus = 'partial';
+                            }
+                        }
+                    });
                     
-                    if (paymentDifference > 0) {
-                        // Allocate payment to oldest unpaid/partial orders
-                        allocatePaymentToOldestOrders(selectedOrders, paymentDifference);
+                    // Reset selected orders to base state
+                    selectedOrders.forEach(order => {
+                        const originalOrder = appData.orders.find(o => o.id === order.orderNumber);
+                        if (originalOrder) {
+                            order.amountPaid = originalOrder.amountPaid;
+                            order.balance = originalOrder.price - originalOrder.amountPaid;
+                            order.paymentStatus = originalOrder.paymentStatus;
+                        }
+                    });
+                    
+                    // Now allocate the full new payment amount
+                    if (amountPaid > 0) {
+                        allocatePaymentToOldestOrders(selectedOrders, amountPaid);
                     }
                     
                     // Update invoice
+                    // Determine invoice currency from orders (use first order's currency or existing currency)
+                    const updateCurrency = selectedOrders.length > 0 && selectedOrders[0].currency ? selectedOrders[0].currency : (existingInvoice.currency || '$');
+                    
                     existingInvoice.orders = selectedOrders;
                     existingInvoice.totalAmount = totalAmount;
                     existingInvoice.amountPaid = amountPaid;
                     existingInvoice.balance = totalAmount - amountPaid;
                     existingInvoice.paymentStatus = amountPaid === 0 ? 'pending' : (amountPaid === totalAmount ? 'paid' : 'partial');
+                    existingInvoice.currency = updateCurrency;
                     existingInvoice.dueDate = dueDate;
                     existingInvoice.notes = notes;
                     existingInvoice.updatedAt = new Date().toISOString();
+                    
+                    // Save data without downloading
+                    saveDataOnly();
                     
                     showNotification('Client invoice updated successfully', 'success');
                 }
             } else {
                 // Create new invoice
+                // Determine invoice currency from orders (use first order's currency or default to dollar)
+                const invoiceCurrency = selectedOrders.length > 0 && selectedOrders[0].currency ? selectedOrders[0].currency : '$';
+                
                 const newInvoice = {
                     id: appData.clientInvoices.length + 1,
                     invoiceNumber: invoiceNumber,
@@ -3527,12 +3883,17 @@
                     amountPaid: amountPaid,
                     balance: totalAmount - amountPaid,
                     paymentStatus: amountPaid === 0 ? 'pending' : (amountPaid === totalAmount ? 'paid' : 'partial'),
+                    currency: invoiceCurrency,
                     createdAt: new Date().toISOString(),
                     dueDate: dueDate,
                     notes: notes
                 };
                 
                 appData.clientInvoices.push(newInvoice);
+                
+                // Save data without downloading
+                await saveDataOnly();
+                
                 showNotification('Client invoice created successfully', 'success');
             }
             
@@ -3578,12 +3939,37 @@
                     if (originalOrder) {
                         originalOrder.amountPaid = order.amountPaid;
                         originalOrder.paymentStatus = order.paymentStatus;
+                        
+                        // Create/update payment record
+                        if (paymentForThisOrder > 0) {
+                            const existingPayment = appData.payments.find(p => p.orderId === order.orderNumber);
+                            if (existingPayment) {
+                                // Update existing payment
+                                existingPayment.amount = order.amountPaid;
+                                existingPayment.paymentDate = new Date().toISOString().split('T')[0];
+                                existingPayment.currency = order.currency || '$';
+                                existingPayment.updatedAt = new Date().toISOString();
+                            } else {
+                                // Create new payment record
+                                const paymentId = Math.max(...appData.payments.map(p => p.id), 0) + 1;
+                                appData.payments.push({
+                                    id: paymentId,
+                                    orderId: order.orderNumber,
+                                    amount: order.amountPaid,
+                                    paymentDate: new Date().toISOString().split('T')[0],
+                                    paymentMethod: 'Invoice Payment',
+                                    notes: `Payment allocated from invoice`,
+                                    currency: order.currency || '$',
+                                    createdAt: new Date().toISOString()
+                                });
+                            }
+                        }
                     }
                 }
             }
         }
 
-        function saveWriterInvoice() {
+        async function saveWriterInvoice() {
             const writerId = document.getElementById('invoiceWriter').value;
             const invoiceNumber = document.getElementById('writerInvoiceNumber').value;
             const dueDate = document.getElementById('writerInvoiceDueDate').value;
@@ -3648,6 +4034,7 @@
             };
             
             appData.writerInvoices.push(newInvoice);
+            await saveDataOnly();
             renderWriterInvoices();
             hideModal('writerInvoiceModal');
             showNotification('Writer invoice created successfully', 'success');
@@ -3662,6 +4049,7 @@
             
             // Set editing mode
             document.getElementById('clientInvoiceModalTitle').textContent = 'Edit Client Invoice';
+            document.getElementById('clientInvoiceSubmitBtn').textContent = 'Update Invoice';
             document.getElementById('clientInvoiceId').value = invoice.id;
             
             // Populate client dropdown first
@@ -3756,6 +4144,10 @@
                 invoice.amountPaid = invoice.totalAmount;
                 invoice.balance = 0;
                 invoice.paymentStatus = 'paid';
+                
+                // Save changes
+                saveDataOnly();
+                
                 renderClientInvoices();
                 showNotification('Client invoice marked as paid', 'success');
             }
@@ -3767,6 +4159,10 @@
                 invoice.amountPaid = invoice.totalEarnings;
                 invoice.balance = 0;
                 invoice.paymentStatus = 'paid';
+                
+                // Save changes
+                saveDataOnly();
+                
                 renderWriterInvoices();
                 showNotification('Writer invoice marked as paid', 'success');
             }
@@ -3858,8 +4254,8 @@
                     invoiceData.push([
                         `${index + 1}. ${order.topic || order.subject}`,
                         1,
-                        `${currentCurrency}${parseFloat(order.price).toFixed(2)}`,
-                        `${currentCurrency}${parseFloat(order.price).toFixed(2)}`,
+                        `${order.currency || currentCurrency}${parseFloat(order.price).toFixed(2)}`,
+                        `${order.currency || currentCurrency}${parseFloat(order.price).toFixed(2)}`,
                         index === 0 ? 'THANK YOU FOR YOUR BUSINESS!' : '',
                         ''
                     ]);
@@ -3884,10 +4280,15 @@
             // Add 1 empty row before totals
             invoiceData.push(['', '', '', '', '', '']);
             
-            // Add totals section
-            invoiceData.push(['', '', 'SUB TOTAL', `${currentCurrency}${parseFloat(invoice.totalAmount).toFixed(2)}`, '', '']);
-            invoiceData.push(['', '', 'Advance paid', `${currentCurrency}${parseFloat(invoice.amountPaid).toFixed(2)}`, '', '']);
-            invoiceData.push(['', '', 'TOTAL Outstanding', `${currentCurrency}${parseFloat(invoice.balance).toFixed(2)}`, '', '']);
+            // Add totals section (use invoice currency if all orders have same currency, otherwise use current currency)
+            const invoiceCurrency = invoice.orders && invoice.orders.length > 0 && 
+                                   invoice.orders.every(o => o.currency === invoice.orders[0].currency) 
+                                   ? invoice.orders[0].currency 
+                                   : currentCurrency;
+                                   
+            invoiceData.push(['', '', 'SUB TOTAL', `${invoiceCurrency}${parseFloat(invoice.totalAmount).toFixed(2)}`, '', '']);
+            invoiceData.push(['', '', 'Advance paid', `${invoiceCurrency}${parseFloat(invoice.amountPaid).toFixed(2)}`, '', '']);
+            invoiceData.push(['', '', 'TOTAL Outstanding', `${invoiceCurrency}${parseFloat(invoice.balance).toFixed(2)}`, '', '']);
             
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(invoiceData);
@@ -4282,8 +4683,15 @@
             <option value="export">📥 Export All Data</option>
             <option value="save">💾 Save to JSON Files</option>
             <option value="import">📤 Import Data</option>
+            <option value="github">🔧 GitHub Settings</option>
         </select>
         <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+        <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="autoDownloadJSON" onchange="toggleAutoDownload()">
+            <label class="form-check-label" for="autoDownloadJSON">
+                Auto-download JSON on save
+            </label>
+        </div>
     </div>
 
     <style>
@@ -4293,6 +4701,10 @@
             right: 1rem;
             z-index: 1040;
             min-width: 200px;
+            background-color: var(--card-bg);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
         .data-actions-dropdown .form-select {
@@ -4330,10 +4742,77 @@
                 case 'import':
                     document.getElementById('importFile').click();
                     break;
+                case 'github':
+                    showGitHubSettings();
+                    break;
             }
             
             // Reset select to default option
             select.value = '';
+        }
+        
+        // Toggle auto-download JSON files on save
+        function toggleAutoDownload() {
+            const checkbox = document.getElementById('autoDownloadJSON');
+            appData.settings.autoDownloadJSON = checkbox.checked;
+            saveDataToLocalStorage();
+            showNotification(checkbox.checked ? 
+                'Auto-download enabled. JSON files will download on every save.' : 
+                'Auto-download disabled. Use "Save to JSON Files" to download manually.', 
+                'info'
+            );
+        }
+        
+        // Show GitHub settings modal
+        function showGitHubSettings() {
+            // Pre-fill current settings
+            document.getElementById('githubOwner').value = appData.settings.githubOwner || '';
+            document.getElementById('githubRepo').value = appData.settings.githubRepo || '';
+            document.getElementById('githubToken').value = appData.settings.githubToken || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('githubSettingsModal'));
+            modal.show();
+        }
+        
+        // Save GitHub settings
+        function saveGitHubSettings() {
+            const owner = document.getElementById('githubOwner').value.trim();
+            const repo = document.getElementById('githubRepo').value.trim();
+            const token = document.getElementById('githubToken').value.trim();
+            
+            if (!owner || !repo || !token) {
+                showNotification('Please fill in all GitHub configuration fields', 'error');
+                return;
+            }
+            
+            // Test the configuration
+            fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Invalid configuration or insufficient permissions');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Save settings
+                appData.settings.githubOwner = owner;
+                appData.settings.githubRepo = repo;
+                appData.settings.githubToken = token;
+                saveDataToLocalStorage();
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('githubSettingsModal')).hide();
+                
+                showNotification('GitHub configuration saved successfully!', 'success');
+            })
+            .catch(error => {
+                showNotification('GitHub configuration test failed: ' + error.message, 'error');
+            });
         }
 
         // Currency management
@@ -4367,6 +4846,15 @@
             renderWriterInvoices();
         }
 
+        function updateOrderCurrency() {
+            const selectedCurrency = document.getElementById('orderCurrency').value;
+            
+            // Update currency symbols in order form labels
+            document.getElementById('orderPriceLabel').textContent = `Quoted Price (${selectedCurrency}) *`;
+            document.getElementById('orderAmountPaidLabel').textContent = `Amount Paid (${selectedCurrency})`;
+            document.getElementById('orderBalanceLabel').textContent = `Balance (${selectedCurrency})`;
+        }
+
         function calculateInvoiceBalance() {
             const totalAmount = parseFloat(document.getElementById('invoiceTotalAmount').value) || 0;
             const amountPaid = parseFloat(document.getElementById('invoiceAmountPaid').value) || 0;
@@ -4393,6 +4881,7 @@
         function createNewClientInvoice() {
             // Reset form for creating new invoice
             document.getElementById('clientInvoiceModalTitle').textContent = 'Create Client Invoice';
+            document.getElementById('clientInvoiceSubmitBtn').textContent = 'Create Invoice';
             document.getElementById('clientInvoiceId').value = '';
             document.getElementById('clientInvoiceForm').reset();
             document.getElementById('clientOrdersList').innerHTML = '<p class="text-muted mb-0">Select a client to view available orders</p>';
@@ -4407,6 +4896,11 @@
             document.getElementById('writerAssignmentsList').innerHTML = '<p class="text-muted mb-0">Select a writer to view available assignments</p>';
             new bootstrap.Modal(document.getElementById('writerInvoiceModal')).show();
         }
+
+        // Initialize app - load data from localStorage on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromLocalStorage();
+        });
     </script>
 </body>
 </html>
