@@ -1,26 +1,26 @@
 [
-    {
-      "id": 1,
-      "name": "John Doe",
-      "whatsapp": "+1234567890",
-      "email": "john@example.com",
-      "address": "123 Main St, City, State",
-      "createdAt": "2025-06-15T10:00:00"
-    },
-    {
-      "id": 2,
-      "name": "Jane Smith",
-      "whatsapp": "+0987654321",
-      "email": "jane@example.com",
-      "address": "456 Oak Ave, City, State",
-      "createdAt": "2025-06-16T14:30:00"
-    },
-    {
-      "id": 3,
-      "name": "Mike Johnson",
-      "whatsapp": "+254798881260",
-      "email": "mike@example.com",
-      "address": "789 Pine St, City, State",
-      "createdAt": "2025-06-17T09:15:00"
-    }
-  ]
+  {
+    "id": 1,
+    "name": "John Doe",
+    "whatsapp": "+1234567890",
+    "email": "john@example.com",
+    "address": "123 Main St, City, State",
+    "createdAt": "2025-06-15T10:00:00"
+  },
+  {
+    "id": 2,
+    "name": "Jane Smith",
+    "whatsapp": "+0987654321",
+    "email": "jane@example.com",
+    "address": "456 Oak Ave, City, State",
+    "createdAt": "2025-06-16T14:30:00"
+  },
+  {
+    "id": 3,
+    "name": "Mike Johnson",
+    "whatsapp": "+254798881260",
+    "email": "mike@example.com",
+    "address": "789 Pine St, City, State",
+    "createdAt": "2025-06-17T09:15:00"
+  }
+]
