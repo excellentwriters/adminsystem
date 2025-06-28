@@ -1504,52 +1504,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- GitHub Settings Modal -->
-    <div class="modal fade" id="githubSettingsModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">GitHub Configuration</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="githubSettingsForm">
-                        <div class="mb-3">
-                            <label for="githubOwner" class="form-label">GitHub Username/Organization</label>
-                            <input type="text" class="form-control" id="githubOwner" placeholder="e.g., yourusername">
-                            <small class="text-muted">Your GitHub username or organization name</small>
-                        </div>
-                        <div class="mb-3">
-                            <label for="githubRepo" class="form-label">Repository Name</label>
-                            <input type="text" class="form-control" id="githubRepo" placeholder="e.g., AssignmentSystem">
-                            <small class="text-muted">The repository hosting your assignment system</small>
-                        </div>
-                        <div class="mb-3">
-                            <label for="githubToken" class="form-label">Personal Access Token</label>
-                            <input type="password" class="form-control" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-                            <small class="text-muted">
-                                <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">Generate a token</a> with 'repo' scope
-                            </small>
-                        </div>
-                        <div class="alert alert-info">
-                            <strong>Instructions:</strong>
-                            <ol class="mb-0">
-                                <li>Go to GitHub Settings → Developer settings → Personal access tokens</li>
-                                <li>Generate a new token with 'repo' scope</li>
-                                <li>Copy the token and paste it above</li>
-                                <li>Token will be saved locally in your browser</li>
-                            </ol>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveGitHubSettings()">Save Settings</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
@@ -1587,11 +1541,7 @@
             settings: {
                 currency: "USD",
                 dateFormat: "MM/DD/YYYY",
-                defaultPaymentStatus: "pending",
-                autoDownloadJSON: false,
-                githubToken: "",
-                githubRepo: "",
-                githubOwner: ""
+                defaultPaymentStatus: "pending"
             }
         };
 
@@ -1804,12 +1754,6 @@
             showSection('dashboard');
             showLoadingSpinner(false);
             updateDataSourceInfo();
-            
-            // Initialize auto-download checkbox state
-            const autoDownloadCheckbox = document.getElementById('autoDownloadJSON');
-            if (autoDownloadCheckbox && appData.settings) {
-                autoDownloadCheckbox.checked = appData.settings.autoDownloadJSON || false;
-            }
             
             console.log('App initialization complete');
         }
@@ -2156,66 +2100,23 @@
         async function saveDataOnly() {
             saveDataToLocalStorage();
             
-            // Try to save to GitHub if configured
-            if (appData.settings && appData.settings.githubToken && appData.settings.githubRepo) {
-                try {
-                    await saveDataToGitHub();
-                    showNotification('Data successfully saved to GitHub', 'success');
-                } catch (error) {
-                    console.error('Error saving to GitHub:', error);
-                    showNotification('Failed to save to GitHub. Data saved locally.', 'warning');
-                }
-            } else if (appData.settings && appData.settings.autoDownloadJSON) {
-                // Fallback to download if GitHub not configured
-                try {
-                    await downloadAllJSONFiles();
-                    showNotification('JSON files downloaded to your Downloads folder. Copy them to data/ folder.', 'info');
-                } catch (error) {
-                    console.error('Error downloading JSON files:', error);
-                    showNotification('Data saved locally. Use Export to download JSON files.', 'warning');
-                }
-            } else {
-                showNotification('Data saved locally. Configure GitHub or enable auto-download for persistence.', 'info');
+            // Always try to save to GitHub with embedded credentials
+            try {
+                await saveDataToGitHub();
+                showNotification('Data successfully saved to GitHub', 'success');
+            } catch (error) {
+                console.error('Error saving to GitHub:', error);
+                showNotification('Failed to save to GitHub. Data saved locally.', 'warning');
             }
         }
         
-        // Function to download all JSON files (browser can't write directly to filesystem)
-        async function downloadAllJSONFiles() {
-            const files = {
-                'auth.json': authData,
-                'clients.json': appData.clients,
-                'orders.json': appData.orders,
-                'writers.json': appData.writers,
-                'payments.json': appData.payments,
-                'client_invoices.json': appData.clientInvoices,
-                'writer_invoices.json': appData.writerInvoices
-            };
-            
-            // Download each file
-            for (const [filename, data] of Object.entries(files)) {
-                const jsonString = JSON.stringify(data, null, 2);
-                const blob = new Blob([jsonString], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                // Small delay between downloads to prevent browser blocking
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
         
         // GitHub API integration for saving data
         async function saveDataToGitHub() {
-            const { githubToken, githubRepo, githubOwner } = appData.settings;
-            
-            if (!githubToken || !githubRepo || !githubOwner) {
-                throw new Error('GitHub configuration missing');
-            }
+            // Embedded GitHub configuration
+            const githubToken = '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';
+            const githubOwner = 'excellentwriters';
+            const githubRepo = 'adminsystem';
             
             const files = {
                 'data/auth.json': authData,
@@ -2286,45 +2187,6 @@
             }
         }
         
-        // Legacy function for compatibility - redirects to download
-        async function saveDataToJSONFiles() {
-            const files = {
-                'auth.json': authData,
-                'clients.json': appData.clients,
-                'orders.json': appData.orders,
-                'writers.json': appData.writers,
-                'payments.json': appData.payments,
-                'client_invoices.json': appData.clientInvoices,
-                'writer_invoices.json': appData.writerInvoices
-            };
-            
-            for (const [filename, data] of Object.entries(files)) {
-                try {
-                    const response = await fetch('./save_data.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            filename: filename,
-                            data: data
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const result = await response.json();
-                    if (!result.success) {
-                        throw new Error(result.error || 'Unknown error occurred');
-                    }
-                } catch (error) {
-                    console.error(`Error saving ${filename}:`, error);
-                    throw error;
-                }
-            }
-        }
 
         // Load data from localStorage
         function loadDataFromLocalStorage() {
@@ -4683,15 +4545,8 @@
             <option value="export">📥 Export All Data</option>
             <option value="save">💾 Save to JSON Files</option>
             <option value="import">📤 Import Data</option>
-            <option value="github">🔧 GitHub Settings</option>
         </select>
         <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
-        <div class="form-check mt-2">
-            <input class="form-check-input" type="checkbox" id="autoDownloadJSON" onchange="toggleAutoDownload()">
-            <label class="form-check-label" for="autoDownloadJSON">
-                Auto-download JSON on save
-            </label>
-        </div>
     </div>
 
     <style>
@@ -4742,78 +4597,12 @@
                 case 'import':
                     document.getElementById('importFile').click();
                     break;
-                case 'github':
-                    showGitHubSettings();
-                    break;
             }
             
             // Reset select to default option
             select.value = '';
         }
         
-        // Toggle auto-download JSON files on save
-        function toggleAutoDownload() {
-            const checkbox = document.getElementById('autoDownloadJSON');
-            appData.settings.autoDownloadJSON = checkbox.checked;
-            saveDataToLocalStorage();
-            showNotification(checkbox.checked ? 
-                'Auto-download enabled. JSON files will download on every save.' : 
-                'Auto-download disabled. Use "Save to JSON Files" to download manually.', 
-                'info'
-            );
-        }
-        
-        // Show GitHub settings modal
-        function showGitHubSettings() {
-            // Pre-fill current settings
-            document.getElementById('githubOwner').value = appData.settings.githubOwner || '';
-            document.getElementById('githubRepo').value = appData.settings.githubRepo || '';
-            document.getElementById('githubToken').value = appData.settings.githubToken || '';
-            
-            const modal = new bootstrap.Modal(document.getElementById('githubSettingsModal'));
-            modal.show();
-        }
-        
-        // Save GitHub settings
-        function saveGitHubSettings() {
-            const owner = document.getElementById('githubOwner').value.trim();
-            const repo = document.getElementById('githubRepo').value.trim();
-            const token = document.getElementById('githubToken').value.trim();
-            
-            if (!owner || !repo || !token) {
-                showNotification('Please fill in all GitHub configuration fields', 'error');
-                return;
-            }
-            
-            // Test the configuration
-            fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Invalid configuration or insufficient permissions');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Save settings
-                appData.settings.githubOwner = owner;
-                appData.settings.githubRepo = repo;
-                appData.settings.githubToken = token;
-                saveDataToLocalStorage();
-                
-                // Close modal
-                bootstrap.Modal.getInstance(document.getElementById('githubSettingsModal')).hide();
-                
-                showNotification('GitHub configuration saved successfully!', 'success');
-            })
-            .catch(error => {
-                showNotification('GitHub configuration test failed: ' + error.message, 'error');
-            });
-        }
 
         // Currency management
         let currentCurrency = '$';
