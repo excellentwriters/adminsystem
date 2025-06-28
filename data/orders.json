@@ -1,6 +1,7 @@
 [
     {
       "id": 1,
+      "orderId": "CS-ML-25-A1X",
       "clientId": 1,
       "subject": "Computer Science",
       "topic": "Machine Learning Algorithm Implementation",
@@ -16,10 +17,12 @@
       "createdAt": "2025-06-20T10:00:00",
       "paymentDate": "2025-06-20",
       "paymentMethod": "bank_transfer",
-      "paymentNotes": "Initial payment received via bank transfer"
+      "paymentNotes": "Initial payment received via bank transfer",
+      "currency": "dollar"
     },
     {
       "id": 2,
+      "orderId": "BS-MKT-25-B2Y",
       "clientId": 2,
       "subject": "Business Studies",
       "topic": "Marketing Strategy Analysis for E-commerce",
@@ -35,10 +38,12 @@
       "createdAt": "2025-06-15T14:30:00",
       "paymentDate": "2025-06-15",
       "paymentMethod": "paypal",
-      "paymentNotes": "Full payment received upfront"
+      "paymentNotes": "Full payment received upfront",
+      "currency": "pound"
     },
     {
       "id": 3,
+      "orderId": "DS-SEG-25-C3Z",
       "clientId": 3,
       "subject": "Data Science",
       "topic": "Customer Segmentation Analysis",
@@ -54,6 +59,7 @@
       "createdAt": "2025-06-22T11:00:00",
       "paymentDate": null,
       "paymentMethod": null,
-      "paymentNotes": "Awaiting initial payment"
+      "paymentNotes": "Awaiting initial payment",
+      "currency": "dollar"
     }
   ]
