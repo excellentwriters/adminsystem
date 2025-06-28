@@ -1511,7 +1511,6 @@
     <script>
         // Authentication system
         let isAuthenticated = false;
-        const AUTH_TOKEN_KEY = 'clientManagerAuth';
 
         // JSON File Paths - Updated to work with relative paths and GitHub Pages
         const JSON_PATHS = {
@@ -1524,10 +1523,10 @@
             writer_invoices: './data/writer_invoices.json'
         };
 
-        // Authentication data
+        // Authentication data - loaded from auth.json
         let authData = {
-            username: "Kimathi",
-            password: "Kimathi1234"
+            username: "",
+            password: ""
         };
 
         // Application Data Structure
@@ -1541,129 +1540,23 @@
             settings: {
                 currency: "USD",
                 dateFormat: "MM/DD/YYYY",
-                defaultPaymentStatus: "pending"
+                defaultPaymentStatus: "pending",
+                company: {
+                    name: "",
+                    email: "",
+                    paymentInstructions: []
+                }
             }
         };
 
-        // Fallback data with sample order due today
+        // Empty fallback data - all data should come from JSON files
         const fallbackData = {
-            clients: [
-                {
-                    id: 1,
-                    name: "John Doe",
-                    whatsapp: "+1234567890",
-                    email: "john@example.com",
-                    address: "123 Main St, City, State",
-                    createdAt: "2025-06-15T10:00:00"
-                },
-                {
-                    id: 2,
-                    name: "Jane Smith",
-                    whatsapp: "+0987654321",
-                    email: "jane@example.com",
-                    address: "456 Oak Ave, City, State",
-                    createdAt: "2025-06-16T14:30:00"
-                }
-            ],
-            orders: [
-                {
-                    id: 1,
-                    clientId: 1,
-                    subject: "Computer Science",
-                    topic: "Machine Learning Algorithm Implementation",
-                    wordCount: 2000,
-                    deadline: "2025-06-30T23:59",
-                    instructions: "Implement a basic neural network for image classification with Python and TensorFlow",
-                    price: 150.00,
-                    amountPaid: 75.00,
-                    paymentStatus: "partial",
-                    status: "in-progress",
-                    codeInvolved: true,
-                    writerId: 1,
-                    createdAt: "2025-06-20T10:00:00",
-                    paymentDate: "2025-06-20",
-                    paymentMethod: "bank_transfer",
-                    paymentNotes: "Initial payment received via bank transfer"
-                },
-                {
-                    id: 2,
-                    clientId: 2,
-                    subject: "Business Studies",
-                    topic: "Marketing Strategy Analysis for E-commerce",
-                    wordCount: 1500,
-                    deadline: "2025-06-25T18:00",
-                    instructions: "Analyze current market trends and propose digital marketing strategies for online retail",
-                    price: 100.00,
-                    amountPaid: 100.00,
-                    paymentStatus: "paid",
-                    status: "complete",
-                    codeInvolved: false,
-                    writerId: 2,
-                    createdAt: "2025-06-15T14:30:00",
-                    paymentDate: "2025-06-15",
-                    paymentMethod: "paypal",
-                    paymentNotes: "Full payment received upfront"
-                },
-                {
-                    id: 3,
-                    clientId: 2,
-                    subject: "Urgent Assignment",
-                    topic: "Financial Analysis Report - Due Today",
-                    wordCount: 1200,
-                    deadline: "2025-06-25T23:59",
-                    instructions: "Complete financial analysis of Q2 performance with recommendations for Q3",
-                    price: 80.00,
-                    amountPaid: 40.00,
-                    paymentStatus: "partial",
-                    status: "in-progress",
-                    codeInvolved: false,
-                    writerId: 2,
-                    createdAt: "2025-06-24T09:00:00",
-                    paymentDate: "2025-06-24",
-                    paymentMethod: "cash",
-                    paymentNotes: "Partial payment received in cash"
-                }
-            ],
-            writers: [
-                {
-                    id: 1,
-                    name: "Alice Johnson",
-                    whatsapp: "+1122334455",
-                    email: "alice@writers.com",
-                    specialty: "Computer Science & Data Science",
-                    rate: 0.15,
-                    createdAt: "2025-06-10T09:00:00"
-                },
-                {
-                    id: 2,
-                    name: "Bob Wilson",
-                    whatsapp: "+5566778899",
-                    email: "bob@writers.com",
-                    specialty: "Business Studies & Marketing",
-                    rate: 0.12,
-                    createdAt: "2025-06-12T11:00:00"
-                }
-            ],
-            payments: [
-                {
-                    id: 1,
-                    orderId: 1,
-                    amount: 75,
-                    paymentDate: "2025-06-20",
-                    paymentMethod: "bank_transfer",
-                    notes: "Initial payment",
-                    createdAt: "2025-06-20T10:00:00"
-                },
-                {
-                    id: 2,
-                    orderId: 2,
-                    amount: 100,
-                    paymentDate: "2025-06-15",
-                    paymentMethod: "paypal",
-                    notes: "Full payment",
-                    createdAt: "2025-06-15T14:30:00"
-                }
-            ]
+            clients: [],
+            orders: [],
+            writers: [],
+            payments: [],
+            clientInvoices: [],
+            writerInvoices: []
         };
 
         let currentFilter = 'all';
@@ -1675,26 +1568,12 @@
             checkAuthentication();
         });
 
-        // Authentication Functions
+        // Authentication Functions - no localStorage, session-based only
         function checkAuthentication() {
-            const token = localStorage.getItem(AUTH_TOKEN_KEY);
-            if (token && isValidToken(token)) {
-                isAuthenticated = true;
-                showApp();
-                initializeApp();
-            } else {
-                showLogin();
-            }
+            // No persistent authentication - always show login
+            showLogin();
         }
 
-        function isValidToken(token) {
-            try {
-                const data = JSON.parse(atob(token));
-                return data.timestamp > Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-            } catch {
-                return false;
-            }
-        }
 
         function showLogin() {
             document.getElementById('loginScreen').style.display = 'flex';
@@ -1712,8 +1591,6 @@
 
             if (username === authData.username && password === authData.password) {
                 isAuthenticated = true;
-                const token = btoa(JSON.stringify({ timestamp: Date.now() }));
-                localStorage.setItem(AUTH_TOKEN_KEY, token);
                 
                 showApp();
                 initializeApp();
@@ -1727,7 +1604,6 @@
         }
 
         function logout() {
-            localStorage.removeItem(AUTH_TOKEN_KEY);
             isAuthenticated = false;
             showLogin();
         }
@@ -1795,28 +1671,10 @@
             }
         }
 
-        // Load data from localStorage first, then fallback to JSON files
+        // Load data from JSON files only
         async function loadDataFromJSON() {
             try {
-                // First, check if we have valid data in localStorage
-                const hasLocalStorageData = checkLocalStorageData();
-                
-                if (hasLocalStorageData) {
-                    console.log('Loading data from localStorage (prioritized over JSON files)');
-                    loadDataFromLocalStorage();
-                    dataSource = 'localStorage';
-                    return;
-                }
-
-                // Skip JSON loading when using file:// protocol to avoid CORS issues
-                if (window.location.protocol === 'file:') {
-                    console.log('File protocol detected - using embedded data instead of JSON files');
-                    dataSource = 'embedded';
-                    loadEmbeddedData();
-                    return;
-                }
-
-                console.log('No localStorage data found, attempting to load from JSON files');
+                console.log('Loading data from JSON files only');
                 
                 const loadFile = async (path) => {
                     try {
@@ -1838,285 +1696,59 @@
                     loadFile(JSON_PATHS.writer_invoices)
                 ]);
 
-                let hasValidData = false;
+                // Load data from JSON files or use empty arrays if files don't exist
+                appData.clients = (clientsData && Array.isArray(clientsData)) ? clientsData : [];
+                appData.orders = (ordersData && Array.isArray(ordersData)) ? ordersData : [];
+                appData.writers = (writersData && Array.isArray(writersData)) ? writersData : [];
+                appData.payments = (paymentsData && Array.isArray(paymentsData)) ? paymentsData : [];
+                appData.clientInvoices = (clientInvoicesData && Array.isArray(clientInvoicesData)) ? clientInvoicesData : [];
+                appData.writerInvoices = (writerInvoicesData && Array.isArray(writerInvoicesData)) ? writerInvoicesData : [];
 
-                if (clientsData && Array.isArray(clientsData) && clientsData.length > 0) {
-                    appData.clients = clientsData;
-                    hasValidData = true;
-                } else {
-                    appData.clients = fallbackData.clients;
-                }
-
-                if (ordersData && Array.isArray(ordersData) && ordersData.length > 0) {
-                    appData.orders = ordersData;
-                    hasValidData = true;
-                } else {
-                    appData.orders = fallbackData.orders;
-                }
-
-                if (writersData && Array.isArray(writersData) && writersData.length > 0) {
-                    appData.writers = writersData;
-                    hasValidData = true;
-                } else {
-                    appData.writers = fallbackData.writers;
-                }
-
-                if (paymentsData && Array.isArray(paymentsData) && paymentsData.length > 0) {
-                    appData.payments = paymentsData;
-                    hasValidData = true;
-                } else {
-                    appData.payments = fallbackData.payments;
-                }
-
-                if (clientInvoicesData && Array.isArray(clientInvoicesData) && clientInvoicesData.length > 0) {
-                    appData.clientInvoices = clientInvoicesData;
-                    hasValidData = true;
-                } else {
-                    appData.clientInvoices = [];
-                }
-
-                if (writerInvoicesData && Array.isArray(writerInvoicesData) && writerInvoicesData.length > 0) {
-                    appData.writerInvoices = writerInvoicesData;
-                    hasValidData = true;
-                } else {
-                    appData.writerInvoices = [];
-                }
-
-                dataSource = hasValidData ? 'json' : 'fallback';
+                dataSource = 'json';
                 
-                // If we successfully loaded from JSON, save it to localStorage for future use
-                if (hasValidData) {
-                    console.log('Saving JSON data to localStorage for future priority loading');
-                    saveDataToLocalStorage();
-                }
+                console.log('Data loaded from JSON files:', {
+                    clients: appData.clients.length,
+                    orders: appData.orders.length,
+                    writers: appData.writers.length,
+                    payments: appData.payments.length,
+                    clientInvoices: appData.clientInvoices.length,
+                    writerInvoices: appData.writerInvoices.length
+                });
                 
             } catch (error) {
                 console.error('Error in loadDataFromJSON:', error);
-                appData = { ...fallbackData, settings: appData.settings };
-                dataSource = 'fallback';
+                // Initialize with empty data if all fails
+                appData.clients = [];
+                appData.orders = [];
+                appData.writers = [];
+                appData.payments = [];
+                appData.clientInvoices = [];
+                appData.writerInvoices = [];
+                dataSource = 'empty';
             }
         }
 
         // Load embedded data from JSON files content (for file:// protocol)
         function loadEmbeddedData() {
+            // Empty embedded data - all data should come from JSON files
             const embeddedData = {
-                clients: [
-                    {
-                        "id": 1,
-                        "name": "John Doe",
-                        "whatsapp": "+1234567890",
-                        "email": "john@example.com",
-                        "address": "123 Main St, City, State",
-                        "createdAt": "2025-06-15T10:00:00"
-                    },
-                    {
-                        "id": 2,
-                        "name": "Jane Smith",
-                        "whatsapp": "+0987654321",
-                        "email": "jane@example.com",
-                        "address": "456 Oak Ave, City, State",
-                        "createdAt": "2025-06-16T14:30:00"
-                    },
-                    {
-                        "id": 3,
-                        "name": "Mike Johnson",
-                        "whatsapp": "+1122334455",
-                        "email": "mike@example.com",
-                        "address": "789 Pine St, City, State",
-                        "createdAt": "2025-06-17T09:15:00"
-                    }
-                ],
-                orders: [
-                    {
-                        "id": 1,
-                        "clientId": 1,
-                        "subject": "Computer Science",
-                        "topic": "Machine Learning Algorithm Implementation",
-                        "wordCount": 2000,
-                        "deadline": "2025-06-30T23:59",
-                        "instructions": "Implement a basic neural network for image classification with Python and TensorFlow",
-                        "price": 150.00,
-                        "amountPaid": 75.00,
-                        "paymentStatus": "partial",
-                        "status": "in-progress",
-                        "codeInvolved": true,
-                        "writerId": 1,
-                        "createdAt": "2025-06-20T10:00:00",
-                        "paymentDate": "2025-06-20",
-                        "paymentMethod": "bank_transfer",
-                        "paymentNotes": "Initial payment received via bank transfer"
-                    },
-                    {
-                        "id": 2,
-                        "clientId": 2,
-                        "subject": "Business Studies",
-                        "topic": "Marketing Strategy Analysis for E-commerce",
-                        "wordCount": 1500,
-                        "deadline": "2025-06-25T18:00",
-                        "instructions": "Analyze current market trends and propose digital marketing strategies for online retail",
-                        "price": 100.00,
-                        "amountPaid": 100.00,
-                        "paymentStatus": "paid",
-                        "status": "complete",
-                        "codeInvolved": false,
-                        "writerId": 2,
-                        "createdAt": "2025-06-15T14:30:00",
-                        "paymentDate": "2025-06-15",
-                        "paymentMethod": "paypal",
-                        "paymentNotes": "Full payment received upfront"
-                    },
-                    {
-                        "id": 3,
-                        "clientId": 3,
-                        "subject": "Data Science",
-                        "topic": "Customer Segmentation Analysis",
-                        "wordCount": 2500,
-                        "deadline": "2025-06-28T15:00",
-                        "instructions": "Perform customer segmentation using clustering algorithms and provide actionable insights",
-                        "price": 200.00,
-                        "amountPaid": 0.00,
-                        "paymentStatus": "pending",
-                        "status": "not-started",
-                        "codeInvolved": true,
-                        "writerId": 1,
-                        "createdAt": "2025-06-22T11:00:00",
-                        "paymentDate": null,
-                        "paymentMethod": null,
-                        "paymentNotes": "Awaiting initial payment"
-                    },
-                    {
-                        "id": 4,
-                        "clientId": 1,
-                        "subject": "Web Development",
-                        "topic": "React Dashboard Implementation",
-                        "wordCount": 3000,
-                        "deadline": "2025-06-26T12:00",
-                        "instructions": "Create a responsive dashboard using React, Bootstrap, and Chart.js with real-time data updates",
-                        "price": 300.00,
-                        "amountPaid": 150.00,
-                        "paymentStatus": "partial",
-                        "status": "pending",
-                        "codeInvolved": true,
-                        "writerId": null,
-                        "createdAt": "2025-06-21T16:20:00",
-                        "paymentDate": "2025-06-21",
-                        "paymentMethod": "stripe",
-                        "paymentNotes": "50% advance payment through Stripe"
-                    },
-                    {
-                        "id": 5,
-                        "clientId": 2,
-                        "subject": "Urgent Assignment",
-                        "topic": "Financial Analysis Report - Due Today",
-                        "wordCount": 1200,
-                        "deadline": "2025-06-25T23:59",
-                        "instructions": "Complete financial analysis of Q2 performance with recommendations for Q3",
-                        "price": 80.00,
-                        "amountPaid": 40.00,
-                        "paymentStatus": "partial",
-                        "status": "in-progress",
-                        "codeInvolved": false,
-                        "writerId": 2,
-                        "createdAt": "2025-06-24T09:00:00",
-                        "paymentDate": "2025-06-24",
-                        "paymentMethod": "cash",
-                        "paymentNotes": "Partial payment received in cash"
-                    }
-                ],
-                writers: [
-                    {
-                        "id": 1,
-                        "name": "Alice Johnson",
-                        "whatsapp": "+1122334455",
-                        "email": "alice@writers.com",
-                        "specialty": "Computer Science & Data Science",
-                        "rate": 0.15,
-                        "createdAt": "2025-06-10T09:00:00"
-                    },
-                    {
-                        "id": 2,
-                        "name": "Bob Wilson",
-                        "whatsapp": "+5566778899",
-                        "email": "bob@writers.com",
-                        "specialty": "Business Studies & Marketing",
-                        "rate": 0.12,
-                        "createdAt": "2025-06-12T11:00:00"
-                    },
-                    {
-                        "id": 3,
-                        "name": "Carol Martinez",
-                        "whatsapp": "+9988776655",
-                        "email": "carol@writers.com",
-                        "specialty": "Web Development & Programming",
-                        "rate": 0.18,
-                        "createdAt": "2025-06-14T13:45:00"
-                    },
-                    {
-                        "id": 4,
-                        "name": "David Chen",
-                        "whatsapp": "+3344556677",
-                        "email": "david@writers.com",
-                        "specialty": "Academic Research & Statistics",
-                        "rate": 0.14,
-                        "createdAt": "2025-06-16T08:30:00"
-                    }
-                ],
-                payments: [
-                    {
-                        "id": 1,
-                        "orderId": 1,
-                        "amount": 75.00,
-                        "paymentDate": "2025-06-20",
-                        "paymentMethod": "bank_transfer",
-                        "notes": "Initial payment - 50% advance",
-                        "createdAt": "2025-06-20T10:30:00"
-                    },
-                    {
-                        "id": 2,
-                        "orderId": 2,
-                        "amount": 100.00,
-                        "paymentDate": "2025-06-15",
-                        "paymentMethod": "paypal",
-                        "notes": "Full payment received upfront",
-                        "createdAt": "2025-06-15T14:45:00"
-                    },
-                    {
-                        "id": 3,
-                        "orderId": 4,
-                        "amount": 150.00,
-                        "paymentDate": "2025-06-21",
-                        "paymentMethod": "stripe",
-                        "notes": "50% advance payment for React dashboard project",
-                        "createdAt": "2025-06-21T16:30:00"
-                    },
-                    {
-                        "id": 4,
-                        "orderId": 1,
-                        "amount": 0.00,
-                        "paymentDate": null,
-                        "paymentMethod": null,
-                        "notes": "Remaining balance pending completion",
-                        "createdAt": "2025-06-20T10:30:00"
-                    }
-                ]
+                clients: [],
+                orders: [],
+                writers: [],
+                payments: [],
+                clientInvoices: [],
+                writerInvoices: []
             };
 
             appData.clients = embeddedData.clients;
             appData.orders = embeddedData.orders;
             appData.writers = embeddedData.writers;
             appData.payments = embeddedData.payments;
+            appData.clientInvoices = embeddedData.clientInvoices;
+            appData.writerInvoices = embeddedData.writerInvoices;
             dataSource = 'embedded';
         }
 
-        // Save data to localStorage for persistence
-        function saveDataToLocalStorage() {
-            try {
-                localStorage.setItem('assignmentSystem_appData', JSON.stringify(appData));
-                localStorage.setItem('assignmentSystem_authData', JSON.stringify(authData));
-            } catch (error) {
-                console.error('Error saving to localStorage:', error);
-            }
-        }
 
         // Save data to GitHub - ONLY method of persistence
         async function saveDataOnly() {
@@ -2135,7 +1767,7 @@
         
         // Test GitHub connection
         async function testGitHubConnection() {
-            const githubToken = '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';
+            const githubToken = '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';
             const githubOwner = 'excellentwriters';
             const githubRepo = 'adminsystem';
             
@@ -2180,7 +1812,7 @@
         // GitHub API integration for saving data
         async function saveDataToGitHub() {
             // Embedded GitHub configuration
-            const githubToken = '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';
+            const githubToken = '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';
             const githubOwner = 'excellentwriters';
             const githubRepo = 'adminsystem';
             
@@ -2265,57 +1897,7 @@
         }
         
 
-        // Check if localStorage contains valid data
-        function checkLocalStorageData() {
-            try {
-                const savedAppData = localStorage.getItem('assignmentSystem_appData');
-                if (!savedAppData) {
-                    return false;
-                }
-                
-                const parsedData = JSON.parse(savedAppData);
-                
-                // Check if the data has the expected structure and some content
-                const hasValidStructure = parsedData && 
-                                        typeof parsedData === 'object' &&
-                                        Array.isArray(parsedData.clients) &&
-                                        Array.isArray(parsedData.orders) &&
-                                        Array.isArray(parsedData.writers) &&
-                                        Array.isArray(parsedData.payments);
-                
-                // Check if there's actual data (not just empty arrays)
-                const hasContent = parsedData.clients.length > 0 || 
-                                 parsedData.orders.length > 0 || 
-                                 parsedData.writers.length > 0 || 
-                                 parsedData.payments.length > 0;
-                
-                return hasValidStructure && hasContent;
-            } catch (error) {
-                console.error('Error checking localStorage data:', error);
-                return false;
-            }
-        }
 
-        // Load data from localStorage
-        function loadDataFromLocalStorage() {
-            try {
-                const savedAppData = localStorage.getItem('assignmentSystem_appData');
-                const savedAuthData = localStorage.getItem('assignmentSystem_authData');
-                
-                if (savedAppData) {
-                    const parsedData = JSON.parse(savedAppData);
-                    // Merge with existing data, preserving structure
-                    Object.assign(appData, parsedData);
-                }
-                
-                if (savedAuthData) {
-                    const parsedAuthData = JSON.parse(savedAuthData);
-                    Object.assign(authData, parsedAuthData);
-                }
-            } catch (error) {
-                console.error('Error loading from localStorage:', error);
-            }
-        }
 
         // Save data to JSON files (download functionality)
         async function saveAllData() {
@@ -2329,10 +1911,7 @@
                 'writerInvoices.json': appData.writerInvoices
             };
 
-            // First save to localStorage for persistence
-            saveDataToLocalStorage();
-            
-            // Then download files for backup
+            // Download files for backup
             for (const [filename, data] of Object.entries(files)) {
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -4275,8 +3854,9 @@
             // Prepare invoice data matching the sample format exactly
             const invoiceData = [];
             
-            // Row 1: Header with "EXCELLENT WRITERS" spanning columns A-F
-            invoiceData.push(['EXCELLENT WRITERS', '', '', '', '', '']);
+            // Row 1: Header with company name spanning columns A-F
+            const companyName = appData.settings.company.name || 'Company Name';
+            invoiceData.push([companyName, '', '', '', '', '']);
             
             // Row 2: Table headers
             invoiceData.push(['Assignment Name', 'QTY', 'UNIT PRICE', 'TOTAL', '', '']);
@@ -4301,16 +3881,16 @@
             // Add payment instructions right after the THANK YOU message (no spacing)
             let currentRow = paymentInstructionRow + 1;
             invoiceData[currentRow - 1][4] = 'THANK YOU FOR YOUR BUSINESS!';
-            invoiceData.push(['', '', '', '', 'On Remitly select send to Kenya Select mode of receiving', '']);
-            invoiceData.push(['', '', '', '', 'as mobile money transfer.', '']);
-            invoiceData.push(['', '', '', '', 'Then select Safaricom', '']);
-            invoiceData.push(['', '', '', '', 'Name: Roy', '']);
-            invoiceData.push(['', '', '', '', 'last Name: Kimani', '']);
-            invoiceData.push(['', '', '', '', 'Number: +254748121039', '']);
-            invoiceData.push(['', '', '', '', 'Country: Kenya', '']);
-            invoiceData.push(['', '', '', '', 'City: Nairobi', '']);
-            invoiceData.push(['', '', '', '', 'Mobile acc no: +254748121039', '']);
-            invoiceData.push(['', '', '', '', 'Email: excellentwriters549@gmail.com', '']);
+            // Add payment instructions from settings
+            const paymentInstructions = appData.settings.company.paymentInstructions || [];
+            if (paymentInstructions.length > 0) {
+                paymentInstructions.forEach(instruction => {
+                    invoiceData.push(['', '', '', '', instruction, '']);
+                });
+            } else {
+                // Default payment instruction if none configured
+                invoiceData.push(['', '', '', '', 'Payment instructions not configured', '']);
+            }
             
             // Add 1 empty row before totals
             invoiceData.push(['', '', '', '', '', '']);
@@ -4861,8 +4441,7 @@
 
         // Initialize app - data loading is now handled by loadDataFromJSON() which prioritizes localStorage
         document.addEventListener('DOMContentLoaded', function() {
-            // Data loading is now handled in initializeApp() -> loadDataFromJSON() which prioritizes localStorage
-            // loadDataFromLocalStorage(); // Removed: handled by loadDataFromJSON()
+            // Data loading is now handled in initializeApp() -> loadDataFromJSON()
         });
     </script>
 </body>
